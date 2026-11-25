@@ -21,10 +21,19 @@ python3 -m http.server 8000
 
 Then open http://localhost:8000.
 
-## Deploy for free
-The site is plain static files, so any static host works:
-- **GitHub Pages:** push this folder to a repository, then go to Settings → Pages → Deploy from branch.
-- **Netlify or Cloudflare Pages:** drag the folder onto their dashboard, or connect the repository. There's no build command, and the publish directory is the project root.
+## Live site
+**https://nathan-cox830.github.io/openactuary/**, hosted free on GitHub Pages from the `main` branch of [nathan-cox830/openactuary](https://github.com/nathan-cox830/openactuary).
+
+### Publish an update
+From the project folder:
+
+```bash
+git add -A && git commit -m "Describe the change" && git push
+```
+
+GitHub Pages rebuilds automatically, and the live site updates in about a minute. Refresh with Cmd+Shift+R if you still see the old version.
+
+Other free static hosts (Netlify, Cloudflare Pages) also work: there's no build command, and the publish directory is the project root.
 
 The only outside requests are for Google Fonts and KaTeX (from cdnjs). If those can't load, the site falls back to system fonts and plain-text math.
 

@@ -4,6 +4,8 @@ A free, static site. No build step, no server, no API keys, no accounts, no AI s
 
 Run locally: `python3 -m http.server 8000` in the project folder, then open http://localhost:8000. (ES modules don't load from `file://`.)
 
+Live: https://nathan-cox830.github.io/openactuary/ (GitHub Pages, `main` branch, root folder). Publish by committing and pushing to `main`. The site is served under `/openactuary/`, so always use relative paths (never a leading `/`).
+
 ## Hard rules
 - **Free forever:** never add a server, paid API, API key, account system, analytics or tracking. Only external requests allowed: Google Fonts and KaTeX from cdnjs (already wired up).
 - **No external JS libraries** beyond KaTeX. Charts are hand-written SVG (`js/ui/charts.js`).
