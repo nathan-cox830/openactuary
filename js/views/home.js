@@ -35,12 +35,13 @@ export function render(el) {
   </section>
 
   <section class="container paths">
-    <h2 class="section-title" data-reveal>Four ways in</h2>
+    <h2 class="section-title" data-reveal>Five ways in</h2>
     <div class="path-grid">
       ${[
         ['book', 'Learn', 'All of Exam P', 'Step-by-step lessons on all three Exam P topics, with interactive Venn diagrams, distribution explorers and simulators, plus a formula sheet and flashcards.', '#/learn', 'Start learning'],
         ['dice', 'Practice', 'Quiz and problem generator', 'Exam-style multiple choice with worked solutions, and a generator that writes a new problem every time.', '#/practice', 'Practice now'],
         ['layers', 'Cases', 'Solve real insurance problems', 'Reserve a fast-growing insurer, file an auto rate, price an accident surcharge. Then see what happened.', '#/cases', 'Browse cases'],
+        ['grid', 'Skills', 'Excel and SQL, hands-on', 'Interactive tutorials on insurance data: lookups, loss triangles and time value in a built-in spreadsheet, and SQL on a practice claims database.', '#/skills', 'Build skills'],
         ['briefcase', 'Careers', 'Land the internship', 'Curated job searches, the path from first exam to credential, and a timed mock interview coach.', '#/careers', 'Plan your career'],
       ].map(([ic, k, t, d, href, cta], i) => `<a class="path card lift" href="${href}" data-reveal style="--d:${i * 60}ms"><span class="path-ic">${icon(ic)}</span><span class="eyebrow">${k}</span><h3>${t}</h3><p>${d}</p><span class="path-go">${cta} ${icon('arrow')}</span></a>`).join('')}
     </div>

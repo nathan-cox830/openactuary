@@ -350,7 +350,7 @@ export class Workbook {
       if (!this.ast[a]) { try { this.ast[a] = parse(raw.slice(1)); } catch (e) { this.ast[a] = { k: 'syntax', msg: e.message }; } }
       const ast = this.ast[a];
       if (ast.k === 'syntax') v = { err: '#ERROR!', msg: ast.msg };
-      else { v = scalar(evalNode(ast, this._ctx())); if (v === '' || v == null) v = 0; if (isErr(v)) v = { ...v }; }
+      else { v = scalar(evalNode(ast, this._ctx())); if (v == null || (v === '' && ast.k === 'ref')) v = 0; if (isErr(v)) v = { ...v }; }  // =A1 of an empty cell shows 0; =IF(…,"") stays blank, as in Excel
     } catch (e) { v = e instanceof FErr ? e.v : { err: '#VALUE!', msg: e.message }; }
     this.cache[a] = v; return v;
   }

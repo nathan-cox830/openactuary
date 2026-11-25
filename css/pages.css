@@ -44,7 +44,8 @@
 .stats-strip span { color: var(--muted); font-size: 13.5px; }
 @media (max-width: 720px) { .stats-strip { grid-template-columns: 1fr 1fr; } .stats-strip b { font-size: 26px; } }
 
-.path-grid { display: grid; gap: 16px; grid-template-columns: repeat(4, 1fr); }
+.path-grid { display: grid; gap: 14px; grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 1240px) { .path-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 1040px) { .path-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .path-grid { grid-template-columns: 1fr; } }
 .path { text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 8px; }

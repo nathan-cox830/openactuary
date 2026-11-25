@@ -12,6 +12,7 @@ export const title = 'My progress';
 
 // Exam P topics and quiz subtopic labels come from the registry (data/exams.js).
 import { loadExam, subtopicLabels } from '../../data/exams.js';
+import { loadAllTracks } from '../../data/skills/tracks.js';
 
 export async function render(el) {
   const learn = store.load('learn', { done: {} });
@@ -19,6 +20,9 @@ export async function render(el) {
   const practice = store.load('practice', { attempts: 0, correct: 0, streak: 0, bestStreak: 0, byTemplate: {} });
   const flash = store.load('flash', { known: {} });
   const interview = store.load('interview', { sessions: 0, practiced: {}, flagged: {} });
+  const skills = store.load('skills', { done: {} });
+  const tracks = (await loadAllTracks()).filter(Boolean);
+  const skillRows = tracks.map(t => { const steps = t.lessons.flatMap(l => l.steps); return { t, n: steps.length, d: steps.filter(s => (skills.done || {})[s.id]).length }; });
   const PT = await loadExam('p'); const TOPICS = subtopicLabels(PT);
   const done = learn.done || {};
   const perTopic = PT.map(t => ({ t, n: t.steps.length, d: t.steps.filter(s => done[s.id]).length }));
@@ -31,7 +35,7 @@ export async function render(el) {
   const topicAgg = {};
   hist.forEach(h => Object.entries(h.byTopic || {}).forEach(([t, [r, n]]) => { topicAgg[t] = topicAgg[t] || [0, 0]; topicAgg[t][0] += r; topicAgg[t][1] += n; }));
   const nTerms = terms().length, known = Object.values(flash.known || {}).filter(Boolean).length;
-  const anything = lessonDone || hist.length || practice.attempts || cases.some(c => c.p.started) || known || interview.sessions;
+  const anything = skillRows.some(x => x.d) || lessonDone || hist.length || practice.attempts || cases.some(c => c.p.started) || known || interview.sessions;
 
   el.innerHTML = `<div class="container">
     <header class="page-head"><div class="eyebrow">Saved in this browser</div><h1>My progress</h1>
@@ -69,6 +73,10 @@ export async function render(el) {
       <section class="card dash-card" data-reveal>
         <div class="row between"><h3>${icon('mic')} Interview coach</h3><a class="btn sm quiet" href="#/careers/interview">Practice ${icon('arrow')}</a></div>
         ${interview.sessions || Object.keys(interview.practiced || {}).length ? `<div class="mini-stats"><div><b>${interview.sessions || 0}</b><span>mock interviews</span></div><div><b>${Object.keys(interview.practiced || {}).length}</b><span>questions practiced</span></div><div><b>${Object.values(interview.flagged || {}).filter(Boolean).length}</b><span>flagged to redo</span></div></div>` : `<p class="small muted">Timed mock interviews with model answer outlines.</p>`}
+      </section>
+      <section class="card dash-card" data-reveal>
+        <div class="row between"><h3>${icon('grid')} Technical skills</h3><a class="btn sm quiet" href="#/skills">Open ${icon('arrow')}</a></div>
+        <div class="dash-topics">${skillRows.map(({ t, n, d }) => `<a class="dash-topic" href="#/skills">${ring(n ? d / n : 0, { size: 64, label: `${d}/${n}`, done: n && d >= n })}<span><b>${esc(t.name)}</b><span class="tiny muted">${d >= n ? 'Complete' : d ? 'In progress' : 'Not started'}</span></span></a>`).join('')}</div>
       </section>
     </div>
 

@@ -1,0 +1,51 @@
+/* Skills hub (#/skills) and lessons (#/skills/<track>/<lesson>/<step>). */
+.sk-track { margin-bottom: 40px; }
+.sk-track-h { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.sk-track-h .path-ic { margin: 0; flex: none; }
+.sk-track-h h2 { margin: 2px 0 0; }
+.sk-note { display: flex; align-items: center; gap: 6px; margin: -4px 0 12px; }
+.sk-note .ic { width: 14px; height: 14px; }
+.sk-lessons { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sk-lesson { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; padding: 14px 16px; }
+.sk-lesson .sk-n { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font: 800 15px var(--font-display); }
+.sk-lesson.complete .sk-n { background: var(--good-soft); color: var(--good); }
+.sk-lesson .sk-n .ic { width: 16px; height: 16px; stroke-width: 3; }
+.sk-lt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sk-lt b { font-size: 15.5px; }
+.sk-lp { width: 74px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.sk-lp .bar { width: 100%; }
+
+.sk-intro { margin-top: 6px; max-width: 72ch; }
+.sk-intro p { margin: 0 0 6px; }
+.sk-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 28px; align-items: start; }
+.sk-side { position: sticky; top: calc(var(--header-h) + 18px); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.sk-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.sk-task .lsn-title { margin: 4px 0 8px; }
+.sk-task .prose { max-width: none; }
+.sk-sheet { height: 430px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-1); }
+.sk-tip { margin: 6px 2px 0; }
+.sk-actions { gap: 8px; }
+.sk-take { margin: 0; }
+.sk-take b { display: flex; align-items: center; gap: 6px; }
+
+.sk-sql { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.sk-schema { padding: 12px 14px; max-height: 360px; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.sk-ed-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+.sk-ed-h b { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.sk-ed-h .ic { width: 15px; height: 15px; color: var(--accent); }
+.sk-tbl summary { cursor: pointer; padding: 4px 0; font-size: 14px; }
+.sk-tbl ul { list-style: none; margin: 4px 0 8px; padding: 0 0 0 4px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.sk-tbl p { margin: 2px 0; }
+.sk-tbl code, .sk-tbl-res { font-family: var(--font-mono); }
+.sk-ed { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sk-editor { width: 100%; min-height: 190px; resize: vertical; font: 13.5px/1.55 var(--font-mono); padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); color: var(--ink); tab-size: 2; }
+.sk-editor:focus { outline: none; border-color: var(--accent-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-strong) 25%, transparent); }
+.sk-results { padding: 12px 14px; min-height: 80px; }
+.sk-res-h { display: flex; gap: 10px; align-items: baseline; margin-bottom: 6px; }
+.sk-results .tblwrap { max-height: 360px; overflow: auto; }
+.sk-tbl-res { font-size: 12.5px; }
+.sk-tbl-res th { position: sticky; top: 0; background: var(--bg-2); }
+.sk-tbl-res td { white-space: nowrap; }
+
+@media (max-width: 980px) { .sk-layout { grid-template-columns: minmax(0, 1fr); } .sk-side { position: static; } .sk-side .lsn-steps { flex-direction: row; overflow-x: auto; } .sk-side .lsn-step { white-space: nowrap; } }
+@media (max-width: 760px) { .sk-lessons { grid-template-columns: 1fr; } .sk-sql { grid-template-columns: 1fr; } .sk-schema { max-height: 240px; } .sk-sheet { height: 380px; } }

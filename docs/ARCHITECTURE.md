@@ -7,8 +7,8 @@ Run locally: `python3 -m http.server 8000` in the project folder, then open http
 Live: https://nathan-cox830.github.io/openactuary/ (GitHub Pages, `main` branch, root folder). Publish by committing and pushing to `main`. The site is served under `/openactuary/`, so always use relative paths (never a leading `/`).
 
 ## Hard rules
-- **Free forever:** never add a server, paid API, API key, account system, analytics or tracking. Only external requests allowed: Google Fonts and KaTeX from cdnjs (already wired up).
-- **No external JS libraries** beyond KaTeX. Charts are hand-written SVG (`js/ui/charts.js`).
+- **Free forever:** never add a server, paid API, API key, account system, analytics or tracking. Only external requests allowed: Google Fonts, KaTeX from cdnjs, and sql.js 1.12.0 from cdnjs (loaded only on SQL lesson pages).
+- **No external JS libraries** beyond KaTeX and sql.js. Charts are hand-written SVG (`js/ui/charts.js`).
 - **Original content only.** Practice questions are written for this site and must not be copied from SOA/CAS materials or textbooks.
 - Every math answer must be checked: if a question has a numeric answer, compute it in code or verify it by hand.
 - Accessible: real buttons and labels, keyboard usable, color is never the only signal, works at 375px wide, light and dark themes.
@@ -39,6 +39,12 @@ js/ui/modal.js             showModal(html, onAction), closeModal()
 js/ui/formula.js           spreadsheet formula engine (Excel subset): Workbook, shiftFormula, formatValue, FUNCTIONS
 js/ui/sheet.js             spreadsheet grid UI: mountSheet(host, opts), buildWorkbook(rows, overrides), rowsOf()
 css/sheet.css              spreadsheet grid + case workbook drawer
+css/skills.css             Skills hub and lessons
+js/ui/sql.js               SqlRunner (sql.js in a Web Worker, fresh DB per run, timeout) and compareResults()
+data/skills/tracks.js      Skills tracks registry: TRACKS, loadTrack, loadAllTracks
+data/skills/excel.js       Excel lessons (TRACK)
+data/skills/sql.js         SQL lessons (TRACK)
+data/skills/sql-db.js      practice database: TABLES (schema panel), SCHEMA_SQL, SEED_SQL
 js/cases/engine.js         generic case workspace
 js/cases/registry.js       list of cases (+ "coming soon" lines)
 js/cases/defs/*.js         one file per case
@@ -63,6 +69,8 @@ data/careers/*.js          job links, interview questions
 | `#/practice[/<topic>]` | views/practice.js | problem generator for one topic |
 | `#/practice/quiz[/<topic>]` | views/quiz.js | topic quiz, or a mixed exam-length quiz across all topics |
 | `#/cases`, `#/cases/<id>/<tab>` | views/cases.js, views/case.js | case library / workspace |
+| `#/skills` | views/skills.js | Excel and SQL tracks with progress |
+| `#/skills/<track>/<lesson>[/<step>]` | views/skill-lesson.js | one step with a live spreadsheet or SQL editor, checked automatically |
 | `#/careers` | views/careers.js | job links + path guide |
 | `#/careers/interview` | views/interview.js | timed mock interview |
 | `#/progress` | views/progress.js | dashboard over all saved progress |
@@ -90,6 +98,7 @@ Attach event listeners to `el` (not `document`) so they disappear with the view.
 | `practice` | `{ attempts, correct, streak, bestStreak, byTemplate: { <templateId>: [right, total] } }` |
 | `flash` | `{ known: { <term>: true } }` |
 | `interview` | `{ sessions, practiced: { <qid>: count }, flagged: { <qid>: true }, notes: { <qid>: string } }` |
+| `skills` | `{ done: { <stepId>: true }, helped: { <stepId>: true }, sheets: { <stepId>: overrides }, sql: { <stepId>: text }, hint: { <stepId>: n } }` |
 | `case:<id>` | managed by the case engine (`wb` holds workbook edits, `wbOpen`/`wbH` the drawer state) |
 | `last` | `{ route, label, at }`, set with `setLast()` so Home can offer "Continue where you left off". `route` may be `learn/bayes` or `#/learn/bayes`; Home handles both. |
 
@@ -116,3 +125,8 @@ Create `js/cases/defs/<id>.js` exporting `{ id, title, sub, line, level, levelLa
 `mountSheet(host, opts)` in `js/ui/sheet.js` draws an editable grid. Options: `rows` (2D array of raw values: numbers, text, or `=formulas`), `overrides` (the user's edits `{A1: raw}`, mutated in place and passed to `onChange`), `inputs` (ranges shaded as "yours to fill"), `formats` (`{range: 'int'|'dec3'|'pct1'|'money0'…}`), `cols` (`{A: 220}` widths), `checks` (`[{cell, label, answer, tol|rtol}]`, shown as pass/fail chips), `notes` (merge text-only rows into full-width notes). Keyboard: type to replace, F2 to edit, Enter/Tab, arrows (+Shift), Delete, Ctrl/Cmd+C/V/X/Z/Y/D/R, Ctrl+` shows formulas. Clicking a cell while typing a formula inserts its reference; the fill handle copies formulas with relative references shifted.
 
 **Case workbooks:** if a case has `csv()`, the engine shows an "Open workbook" drawer on the Exhibits and Work tabs, built from the same rows as the CSV. Edits save in `case:<id>.wb`. `workbook.links` (`[{cell, path, scale}]`) powers "Use my task inputs" (copies task fields into input cells). Any case answer box accepts a workbook reference such as `=F52`; it is replaced by the value when checked. The CSV download includes the user's edits.
+
+## Skills lessons
+**Excel steps** (`data/skills/excel.js`): `{ id, title, body, sheet: { rows, cols, formats, inputs }, solution, check, require?, hints, takeaway }`. `solution` maps a cell or a range to a value/formula; a range key means the formula is written for its first cell and filled across the range (relative references shift). The checker builds a reference workbook from `rows` + `solution` and compares every cell in `check`, so expected values are never typed by hand. `require` rules (`{ range, formula | fn | pattern, msg }`) make sure the learner used the technique being taught. Each step's sheet is independent.
+
+**SQL steps** (`data/skills/sql.js`): `{ id, title, body, tables, starter, solution, ordered, hints, takeaway }`. Queries run on a fresh copy of the practice database (`data/skills/sql-db.js`). The learner's result must match the reference query's: same column count, same rows (multiset unless `ordered`), numbers compared to 4 decimals, column names ignored. sql.js's SQLite has no `ln`/`exp`/`power`, so lessons avoid math functions.

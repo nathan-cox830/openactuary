@@ -9,6 +9,7 @@ Free actuarial exam prep and interactive insurance case studies. **Free forever,
   - *Who's a Risky Driver?* (Exam P level): Bayes' theorem and accident surcharges
   - *The Stale Triangle* (advanced): workers comp reserving on real Schedule P data
   - *Should We File?* (advanced): personal auto rate indication on real Schedule P data
+- **Skills:** hands-on Excel tutorials in a built-in spreadsheet and SQL tutorials on a practice insurance database (real SQLite in the browser), checked automatically.
 - **Careers:** curated job searches, the path from first exam to credential, and a timed mock interview coach.
 - **My progress:** a dashboard of everything saved in the browser, with export and import.
 
@@ -35,7 +36,7 @@ GitHub Pages rebuilds automatically, and the live site updates in about a minute
 
 Other free static hosts (Netlify, Cloudflare Pages) also work: there's no build command, and the publish directory is the project root.
 
-The only outside requests are for Google Fonts and KaTeX (from cdnjs). If those can't load, the site falls back to system fonts and plain-text math.
+The only outside requests are for Google Fonts, KaTeX (from cdnjs) and, on SQL lesson pages only, the sql.js SQLite engine (from cdnjs). If those can't load, the site falls back to system fonts and plain-text math.
 
 ## Add content
 - **A new case:** see "Adding a case" in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Each case is one file in `js/cases/defs/`, plus any calculators in `js/cases/benches/`. Life, health and retirement cases plug into the same engine.
