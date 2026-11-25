@@ -1,0 +1,120 @@
+/* OpenActuary design tokens.
+   Deep navy base, one bright accent (electric cyan), semantic good / warn / bad.
+   Light theme by default; dark via prefers-color-scheme or [data-theme="dark"]. */
+:root {
+  --font-ui: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Sora", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* brand constants (same in both themes) */
+  --navy-950: #050C1A;
+  --navy-900: #0A1730;
+  --navy-800: #102244;
+  --navy-700: #183160;
+  --cyan-300: #67E8F9;
+  --cyan-400: #22D3EE;
+  --cyan-500: #06B6D4;
+
+  /* light theme */
+  --bg: #F3F6FB;
+  --bg-2: #E9EEF7;
+  --surface: #FFFFFF;
+  --surface-2: #F7F9FC;
+  --ink: #0A1730;
+  --ink-2: #33415C;
+  --muted: #5E6B85;
+  --line: #DCE3EE;
+  --line-strong: #C3CEDF;
+
+  --accent: #0784A0;          /* text-safe accent on light surfaces */
+  --accent-strong: #06B6D4;   /* fills, rings, chart lines */
+  --accent-soft: #E0F6FA;
+  --accent-ink: #032F3A;      /* text on accent-strong fills */
+  --hl: #FFF4CC;
+
+  --good: #0F7B55;  --good-soft: #DDF3EA;
+  --warn: #A55A00;  --warn-soft: #FCEFD9;
+  --bad:  #B42335;  --bad-soft:  #FBE3E6;
+
+  --chart-1: #06B6D4;
+  --chart-2: #6366F1;
+  --chart-3: #F59E0B;
+  --chart-4: #10B981;
+  --chart-muted: #A4B0C5;
+
+  --hero-bg: radial-gradient(1200px 500px at 85% -10%, rgba(34,211,238,.22), transparent 60%),
+             radial-gradient(900px 500px at -10% 110%, rgba(99,102,241,.25), transparent 60%),
+             linear-gradient(160deg, var(--navy-900), var(--navy-950));
+  --hero-ink: #EAF2FF;
+  --hero-muted: #9FB3D1;
+
+  --shadow-1: 0 1px 2px rgba(10,23,48,.06), 0 1px 1px rgba(10,23,48,.04);
+  --shadow-2: 0 6px 20px rgba(10,23,48,.08), 0 2px 6px rgba(10,23,48,.05);
+  --shadow-3: 0 24px 60px rgba(10,23,48,.18), 0 8px 20px rgba(10,23,48,.08);
+  --radius-s: 8px;
+  --radius: 14px;
+  --radius-l: 22px;
+
+  --ease: cubic-bezier(.2,.7,.2,1);
+  --header-h: 64px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #060E1E;
+    --bg-2: #0A1628;
+    --surface: #0D1B33;
+    --surface-2: #11223F;
+    --ink: #E8EEF9;
+    --ink-2: #C3CEE2;
+    --muted: #8C9BB8;
+    --line: #1C2E50;
+    --line-strong: #2A4069;
+    --accent: #4BE1F5;
+    --accent-strong: #22D3EE;
+    --accent-soft: #0C2D3E;
+    --accent-ink: #032F3A;
+    --hl: #3A3218;
+    --good: #4ADE9B;  --good-soft: #0E2F25;
+    --warn: #FBBF5A;  --warn-soft: #362812;
+    --bad:  #FB8090;  --bad-soft:  #3A1820;
+    --chart-1: #22D3EE;
+    --chart-2: #8B8DFB;
+    --chart-3: #FBBF24;
+    --chart-4: #34D399;
+    --chart-muted: #4D6187;
+    --shadow-1: 0 1px 2px rgba(0,0,0,.3);
+    --shadow-2: 0 6px 20px rgba(0,0,0,.35);
+    --shadow-3: 0 24px 60px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #060E1E;
+  --bg-2: #0A1628;
+  --surface: #0D1B33;
+  --surface-2: #11223F;
+  --ink: #E8EEF9;
+  --ink-2: #C3CEE2;
+  --muted: #8C9BB8;
+  --line: #1C2E50;
+  --line-strong: #2A4069;
+  --accent: #4BE1F5;
+  --accent-strong: #22D3EE;
+  --accent-soft: #0C2D3E;
+  --accent-ink: #032F3A;
+  --hl: #3A3218;
+  --good: #4ADE9B;  --good-soft: #0E2F25;
+  --warn: #FBBF5A;  --warn-soft: #362812;
+  --bad:  #FB8090;  --bad-soft:  #3A1820;
+  --chart-1: #22D3EE;
+  --chart-2: #8B8DFB;
+  --chart-3: #FBBF24;
+  --chart-4: #34D399;
+  --chart-muted: #4D6187;
+  --shadow-1: 0 1px 2px rgba(0,0,0,.3);
+  --shadow-2: 0 6px 20px rgba(0,0,0,.35);
+  --shadow-3: 0 24px 60px rgba(0,0,0,.5);
+  color-scheme: dark;
+}
