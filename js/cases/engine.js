@@ -8,6 +8,8 @@ import { countUp, confetti } from '../ui/motion.js';
 import { applyGlossary } from '../ui/glossary.js';
 import { showModal, closeModal } from '../ui/modal.js';
 import BENCHES from './benches/index.js';
+import { mountSheet, buildWorkbook, rowsOf } from '../ui/sheet.js';
+import { isErr, formatValue } from '../ui/formula.js';
 
 export const TABS = [
   ['brief', 'Brief', 'brief'], ['learn', 'Learn', 'book'], ['exhibits', 'Exhibits', 'table'],
@@ -81,9 +83,86 @@ export function mount(el, def, tab) {
   <div class="container case-layout">
     <nav class="case-rail" aria-label="Case sections"><div class="case-rail-inner" id="caseRail"></div></nav>
     <div class="case-body" id="tabbody" role="tabpanel"></div>
-  </div>`;
+  </div>
+  ${def.csv ? `<aside class="wb-drawer" id="wbDrawer" aria-label="Case workbook" aria-hidden="true">
+    <div class="wb-grip" id="wbGrip" title="Drag to resize" aria-hidden="true"></div>
+    <div class="wb-head"><h2>${icon('grid')} Workbook</h2><span class="small muted wb-sub">Live formulas. Yellow cells are yours to fill.</span>
+      <div class="wb-actions">
+        ${def.workbook?.links ? `<button class="btn sm ghost" data-wb="pull" title="Copy the values you entered in the Work tab tasks into the workbook's input cells">${icon('pencil')}<span class="lbl"> Use my task inputs</span></button>` : ''}
+        <button class="btn sm ghost" data-wb="csv" title="Download this workbook, with your edits, as a CSV for Excel or Google Sheets">${icon('download')}<span class="lbl"> CSV</span></button>
+        <button class="btn sm quiet" data-wb="reset" title="Undo all your edits to the workbook">${icon('refresh')}<span class="lbl"> Reset</span></button>
+        <button class="btn sm quiet" data-wb="max" aria-label="Expand or shrink the workbook">${icon('expand')}</button>
+        <button class="btn sm quiet" data-wb="close" aria-label="Close the workbook">${icon('x')}</button>
+      </div></div>
+    <div class="wb-body" id="wbBody"></div>
+  </aside>
+  <button class="btn primary wb-fab" id="wbFab" data-wb="open" hidden>${icon('grid')} Open workbook</button>` : ''}`;
 
   const body = $('#tabbody', el), rail = $('#caseRail', el), prog = $('#caseProgress', el);
+
+  /* ---------- workbook (in-app spreadsheet built from def.csv) ---------- */
+  const W = def.workbook || {};
+  // The drawer is fixed-position, so it lives on <body>: the view wrapper's entry animation leaves a transform
+  // that would otherwise pin "fixed" children to the view instead of the viewport.
+  const drawer = $('#wbDrawer', el), fab = $('#wbFab', el);
+  if (drawer) { document.body.append(drawer, fab); }
+  let sheet = null;
+  const wbRows = () => def.csv(st);
+  const liveWb = () => sheet ? sheet.wb : buildWorkbook(wbRows(), st.wb || {});
+  const wbTab = () => st.tab === 'work' || st.tab === 'exhibits';
+  function mountWb() {
+    if (sheet || !drawer) return;
+    st.wb = st.wb || {};
+    sheet = mountSheet($('#wbBody', drawer), { rows: wbRows(), overrides: st.wb, inputs: W.inputs, formats: W.formats, cols: W.cols, checks: W.checks, notes: true, label: def.title + ' workbook', onChange(o) { st.wb = o; save(); } });
+  }
+  function showWb(open) {
+    if (!drawer) return;
+    if (open != null) { st.wbOpen = open; save(); }
+    const vis = !!st.wbOpen && wbTab();
+    if (vis) mountWb();
+    drawer.classList.toggle('open', vis); drawer.setAttribute('aria-hidden', String(!vis));
+    if (vis) drawer.removeAttribute('inert'); else drawer.setAttribute('inert', '');
+    document.body.classList.toggle('wb-open', vis);
+    if (fab) fab.hidden = vis || !wbTab();
+    if (st.wbH) { drawer.style.setProperty('--wb-h', st.wbH + 'px'); document.body.style.setProperty('--wb-h', st.wbH + 'px'); }
+    if (vis && open) setTimeout(() => sheet && sheet.focus(), 330);
+  }
+  /** Replace "=F52"-style entries in answer boxes with the workbook value. Returns an error message or ''. */
+  function resolveFormulas(scope) {
+    if (!def.csv) return '';
+    let bad = '';
+    scope.querySelectorAll('input[type="text"]').forEach(x => {
+      if (x.closest('.wb-drawer') || !x.value.trim().startsWith('=')) return;
+      const v = liveWb().evaluate(x.value);
+      if (typeof v !== 'number') { bad = `The workbook formula ${x.value.trim()} gives ${isErr(v) ? v.err : 'text, not a number'}.`; return; }
+      x.value = String(+v.toPrecision(10)); writeInput(x);
+    });
+    return bad;
+  }
+  function writeInput(x) {
+    const d = x.dataset;
+    if (d.ans) st.ans[d.ans] = x.value; else if (d.field) setPath(st, d.field, x.value);
+  }
+  function pullInputs() {
+    const ch = {}; let n = 0;
+    (W.links || []).forEach(({ cell, path, scale }) => { const v = num(path.split('.').reduce((o, k) => o == null ? o : o[k], st)); if (isFinite(v)) { ch[cell] = +(v * (scale || 1)).toPrecision(10); n++; } });
+    if (!n) { toast('Nothing to copy yet: fill in the task inputs on the Work tab first.'); return; }
+    mountWb(); sheet.setCells(ch); toast(`Copied ${n} value${n === 1 ? '' : 's'} from your tasks into the workbook.`);
+  }
+  function wbCsv() {
+    const rows = wbRows(); const wb = liveWb();
+    const out = rowsOf(wb, rows.length + 3, Math.max(...rows.map(r => r.length)) + 1);
+    return saveFile(`${def.id}-workbook.csv`, '\ufeff' + csvEncode(out), 'text/csv;charset=utf-8');
+  }
+  if (drawer) {
+    const grip = $('#wbGrip', drawer);
+    grip.addEventListener('pointerdown', e => {
+      e.preventDefault(); grip.setPointerCapture(e.pointerId);
+      const move = ev => { const h = Math.max(180, Math.min(window.innerHeight - 90, window.innerHeight - ev.clientY)); st.wbH = Math.round(h); drawer.style.setProperty('--wb-h', h + 'px'); document.body.style.setProperty('--wb-h', h + 'px'); };
+      const up = () => { grip.removeEventListener('pointermove', move); grip.removeEventListener('pointerup', up); save(); };
+      grip.addEventListener('pointermove', move); grip.addEventListener('pointerup', up);
+    });
+  }
 
   function renderHeader() {
     const p = progressOf(def, st);
@@ -101,6 +180,7 @@ export function mount(el, def, tab) {
 
   function renderTab({ keepScroll = false } = {}) {
     body.innerHTML = tabBody();
+    showWb();
     applyGlossary(body); countUp(body); animateRings(body);
     if (!keepScroll && st.tab !== 'work') { /* leave scroll where the router put it */ }
     store.setLast(`cases/${def.id}/${st.tab}`, `${def.title}: ${TABS.find(t => t[0] === st.tab)[1]}`);
@@ -144,7 +224,7 @@ export function mount(el, def, tab) {
 
   function exhibitsTab() {
     return `<div class="stack-lg">
-      ${def.csv ? `<div class="card excel-card"><div class="excel-ic">${icon('download')}</div><div style="flex:1;min-width:220px"><b>Work in Excel or Google Sheets</b><div class="small muted">One CSV with all of this case's data, step-by-step guidance in the top rows, and live formulas that calculate when you open it.</div></div><button class="btn ghost" data-csv>${icon('download')} Download workbook</button></div>` : ''}
+      ${def.csv ? `<div class="card excel-card"><div class="excel-ic">${icon('grid')}</div><div style="flex:1;min-width:220px"><b>Work it in the case workbook</b><div class="small muted">A spreadsheet built into this page with all of the case data, step-by-step guidance and live formulas. Your edits save automatically. Prefer Excel or Google Sheets? Download it as a CSV.</div></div><div class="row"><button class="btn primary" data-wb="open">${icon('grid')} Open workbook</button><button class="btn ghost" data-csv>${icon('download')} CSV</button></div></div>` : ''}
       ${def.exhibits(st)}
       ${nextBtn('work', 'Start the work')}</div>`;
   }
@@ -201,7 +281,7 @@ export function mount(el, def, tab) {
     const mode = st.mode || 'guided';
     const F = def.tasks.filter(t => t.tier === 'F' && t.type !== 'pick'), S = def.tasks.filter(t => t.tier === 'S'), pick = pickTask(def);
     const fd = F.filter(t => st.done[t.id]).length;
-    let h = `<div class="work-head card tight"><p class="small muted" style="margin:0;max-width:62ch">${mode === 'guided' ? 'Guided mode: work through the steps in order. Hints come in steps, and the last one shows the worked answer. Stretch tasks unlock when the Foundations are done.' : 'Competition mode: every task is open and worked answers are off, as in a real competition.'} Hover over or tap any <span class="gl" tabindex="0" data-def="Underlined terms show a short definition. The full list is on the Glossary page.">underlined term</span> for a definition.</p>
+    let h = `<div class="work-head card tight"><p class="small muted" style="margin:0;max-width:62ch">${mode === 'guided' ? 'Guided mode: work through the steps in order. Hints come in steps, and the last one shows the worked answer. Stretch tasks unlock when the Foundations are done.' : 'Competition mode: every task is open and worked answers are off, as in a real competition.'} Hover over or tap any <span class="gl" tabindex="0" data-def="Underlined terms show a short definition. The full list is on the Glossary page.">underlined term</span> for a definition.${def.csv ? ` <br><b>Workbook:</b> <button class="linklike" data-wb="open">open the case workbook</button> to calculate in a spreadsheet. Any answer box accepts a workbook reference such as <code>=F52</code>.` : ''}</p>
       <div class="seg" role="group" aria-label="Mode"><button data-mode="guided" aria-pressed="${mode === 'guided'}">Guided</button><button data-mode="competition" aria-pressed="${mode === 'competition'}">Competition</button></div></div>
       ${trackerHtml()}`;
     h += `<section class="stack"><h2>Foundations <span class="count">${fd}/${F.length}</span></h2>${F.map(taskHtml).join('')}</section>`;
@@ -275,6 +355,8 @@ Begin with your first question.`;
   function setFb(id, ok, msg) { st.ans['fb_' + id] = { ok, msg }; }
   function check(id) {
     const t = def.tasks.find(x => x.id === id);
+    const taskEl = $('#task-' + id, el); const wbErr = taskEl ? resolveFormulas(taskEl) : '';
+    if (wbErr) { setFb(id, false, esc(wbErr)); save(); return rerender(id); }
     if (t.type === 'num') {
       const v = num(st.ans[id]); const a = t.answer(st);
       if (!isFinite(a)) setFb(id, false, 'Complete the earlier task this one depends on first.');
@@ -326,7 +408,7 @@ Begin with your first question.`;
       <div class="row" style="justify-content:flex-end;margin-top:6px"><button class="btn ghost" data-modal="cancel">Cancel</button><button class="btn danger" data-modal="reset">Start over</button></div>`,
     a => {
       if (a === 'dl') { toast(downloadAttempt() ? 'Attempt downloaded. You can start over now.' : 'Your browser blocked the download.'); }
-      if (a === 'reset') { const keepTab = st.tab; Object.keys(st).forEach(k => delete st[k]); Object.assign(st, freshState(), { tab: keepTab }); save(); closeModal(); toast(`"${def.title}" was reset.`); rerender(); window.scrollTo(0, 0); }
+      if (a === 'reset') { const keepTab = st.tab; Object.keys(st).forEach(k => delete st[k]); Object.assign(st, freshState(), { tab: keepTab }); save(); if (sheet) { sheet.destroy(); sheet = null; } closeModal(); toast(`"${def.title}" was reset.`); rerender(); window.scrollTo(0, 0); }
     });
   }
 
@@ -339,7 +421,7 @@ Begin with your first question.`;
 
   /* ---------- event delegation ---------- */
   function onClick(e) {
-    const b = e.target.closest('button'); if (!b || !el.contains(b)) return;
+    const b = e.target.closest('button'); if (!b || !(el.contains(b) || drawer?.contains(b) || b === fab)) return;
     const d = b.dataset;
     if (d.check) return check(d.check);
     if (d.act) { const bn = b.closest('[data-bench]')?.dataset.bench; const bench = BENCHES[bn]; if (bench && bench.action && bench.action(d.act, d.arg, st)) { save(); rerender(); const t = b.closest('.task'); if (t) $('#' + t.id, el)?.scrollIntoView({ block: 'nearest' }); } return; }
@@ -351,9 +433,21 @@ Begin with your first question.`;
     if (d.copy) return copyPrompt(d.copy);
     if (d.qbmove) { const n = def.judgeBank.length; st.qbi = Math.max(0, Math.min(n - 1, (st.qbi || 0) + (+d.qbmove))); save(); return rerender(); }
     if (d.qbshow != null) { st.qbShow = st.qbShow || {}; st.qbShow[d.qbshow] = !st.qbShow[d.qbshow]; save(); return rerender(); }
-    if ('csv' in d) { const ok = saveFile(`${def.id}-workbook.csv`, '﻿' + csvEncode(def.csv(st)), 'text/csv;charset=utf-8'); toast(ok ? 'Workbook downloaded. Open it in Excel or Google Sheets; the formulas calculate on open.' : 'Your browser blocked the download.', 5000); return; }
+    if ('csv' in d || d.wb === 'csv') { toast(wbCsv() ? 'Workbook downloaded with your edits. Open it in Excel or Google Sheets; the formulas calculate on open.' : 'Your browser blocked the download.', 5000); return; }
+    if (d.wb) {
+      if (d.wb === 'open') return showWb(true);
+      if (d.wb === 'close') { showWb(false); return; }
+      if (d.wb === 'max') { drawer.classList.toggle('max'); b.innerHTML = icon(drawer.classList.contains('max') ? 'shrink' : 'expand'); return; }
+      if (d.wb === 'pull') return pullInputs();
+      if (d.wb === 'reset') {
+        showModal(`<h2>Reset the workbook?</h2><p>This removes every edit you made in the workbook and restores the original data and formulas. Your task answers are not affected.</p><div class="row" style="justify-content:flex-end"><button class="btn ghost" data-modal="cancel">Cancel</button><button class="btn danger" data-modal="ok">Reset workbook</button></div>`,
+          a => { if (a === 'ok') { mountWb(); sheet.reset(); closeModal(); toast('Workbook reset.'); } });
+        return;
+      }
+    }
     if ('lock' in d) {
-      const pt = pickTask(def); const ok = def.pickOk ? def.pickOk(st) : isFinite(num(st.pick));
+      const pt = pickTask(def);
+      const lockErr = resolveFormulas(b.closest('.task') || el); if (lockErr) { setFb(pt.id, false, esc(lockErr)); save(); return rerender(pt.id); } const ok = def.pickOk ? def.pickOk(st) : isFinite(num(st.pick));
       if (!ok) { setFb(pt.id, false, 'Enter a number first.'); save(); return rerender(pt.id); }
       st.locked = true; delete st.ans['fb_' + pt.id]; save(); rerender(pt.id); confetti({ count: 90, duration: 1800 });
       toast('Answer locked. The Debrief is open.'); return;
@@ -381,8 +475,15 @@ Begin with your first question.`;
     const btn = x.closest('.task')?.querySelector('[data-check],[data-lock]'); if (btn) { e.preventDefault(); btn.click(); }
   }
   el.addEventListener('click', onClick);
+  if (drawer) { drawer.addEventListener('click', onClick); fab.addEventListener('click', onClick); }
   el.addEventListener('input', onInput);
-  el.addEventListener('change', e => { if (e.target.dataset.self != null || e.target.dataset.mcq) onInput(e); });
+  el.addEventListener('change', e => {
+    if (e.target.dataset.self != null || e.target.dataset.mcq) return onInput(e);
+    const x = e.target;
+    if (def.csv && x.tagName === 'INPUT' && x.type === 'text' && !x.closest('.wb-drawer') && x.value.trim().startsWith('=') && (x.dataset.ans || x.dataset.field)) {
+      const msgErr = resolveFormulas(x.parentElement); if (msgErr) toast(msgErr, 4000); else { save(); refreshBenchOutputs(); }
+    }
+  });
   el.addEventListener('keydown', onKey);
 
   renderHeader(); renderTab();
@@ -393,6 +494,6 @@ Begin with your first question.`;
       st.tab = tab; save(); renderHeader(); renderTab();
       const top = el.querySelector('.case-layout'); if (top && top.getBoundingClientRect().top < 0) top.scrollIntoView({ block: 'start' });
     },
-    destroy() { el.removeEventListener('click', onClick); el.removeEventListener('input', onInput); el.removeEventListener('keydown', onKey); },
+    destroy() { document.body.classList.remove('wb-open'); document.body.style.removeProperty('--wb-h'); if (sheet) sheet.destroy(); drawer?.remove(); fab?.remove(); el.removeEventListener('click', onClick); el.removeEventListener('input', onInput); el.removeEventListener('keydown', onKey); },
   };
 }

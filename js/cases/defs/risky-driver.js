@@ -193,6 +193,17 @@ export default {
 STUDENT WORK: P(A) answer ${st.ans?.d1 || '?'}; tree branches ${st.jL || '?'}, ${st.jM || '?'}, ${st.jH || '?'}; P(High|A) ${st.ans?.d3 || '?'}%; P(A2|A1) ${st.ans?.d5 || '?'}; indicated surcharge ${st.ans?.d7 || '?'}%; recommended surcharge ${st.pick ? st.pick + '%' : 'not yet selected'}.`;
   },
 
+  workbook: {
+    inputs: ['D5:F7'],
+    cols: { A: 250, B: 120, C: 100, D: 200, E: 220, F: 180 },
+    formats: { 'E5:E8': 'pct1', 'B10:B12': 'pct2', 'B13:B15': 'money0' },
+    checks: [
+      { cell: 'D5', label: 'Low: P(class and accident)', answer: 0.03, tol: 5e-6 }, { cell: 'D6', label: 'Medium', answer: 0.03, tol: 5e-6 }, { cell: 'D7', label: 'High', answer: 0.025, tol: 5e-6 },
+      { cell: 'E5', label: 'Low: posterior', answer: 0.03 / 0.085, tol: 5e-5 }, { cell: 'E6', label: 'Medium', answer: 0.03 / 0.085, tol: 5e-5 }, { cell: 'E7', label: 'High', answer: 0.025 / 0.085, tol: 5e-5 },
+      { cell: 'F5', label: 'Low: P(two accidents)', answer: 0.0015, tol: 5e-7 }, { cell: 'F6', label: 'Medium', answer: 0.003, tol: 5e-7 }, { cell: 'F7', label: 'High', answer: 0.00625, tol: 5e-7 },
+      { cell: 'B12', label: 'Indicated surcharge', answer: (0.01075 / 0.085) / ((0.085 - 0.01075) / 0.915) - 1, tol: 5e-4 },
+    ],
+  },
   csv() {
     return [
       ['OpenActuary | Who\'s a Risky Driver? (Heartland Auto) | illustrative data'],

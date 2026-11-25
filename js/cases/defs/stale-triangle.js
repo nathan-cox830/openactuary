@@ -182,6 +182,12 @@ export default {
 STUDENT WORK: selected LDFs ${c ? (st.sel || []).join(', ') + ' tail ' + st.tail : 'not complete'}; student chain ladder IBNR ${c ? fmt(sum(c.ult) - c.sumLatest) : 'n/a'}; Cape Cod ELR ${c ? pct(c.ccElr) : 'n/a'}, CC IBNR ${c ? fmt(rBf(c, c.ccElr)) : 'n/a'}; BF a priori ELR ${isFinite(e) ? pct(e) : 'n/a'}, BF IBNR ${c && isFinite(e) ? fmt(rBf(c, e)) : 'n/a'}; selected IBNR ${st.pick || 'not yet selected'}.`;
   },
 
+  workbook: {
+    inputs: ['B38:K38', 'B54'],
+    cols: { A: 210 },
+    formats: { 'B11:L20': 'int', 'B24:J37': 'dec3', 'B38:K38': 'dec3', 'C42:C52': 'int', 'D42:D51': 'dec3', 'E42:G52': 'int', 'H42:H51': 'pct1', 'I42:K52': 'int', 'B54:B55': 'pct1', 'B56:B57': 'int' },
+    links: [...Array.from({ length: 9 }, (_, j) => ({ cell: 'BCDEFGHIJ'[j] + '38', path: 'sel.' + j })), { cell: 'K38', path: 'tail' }, { cell: 'B54', path: 'elr', scale: 0.01 }],
+  },
   csv() {
     const r = [], T = R.tri, n = 10, L = colL;
     r.push(['OpenActuary | The Stale Triangle (Lakeshore Timber Mutual) | amounts in $000']);

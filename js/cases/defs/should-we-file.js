@@ -201,6 +201,16 @@ export default {
 STUDENT WORK: dev factors ${st.f12 || '?'}, ${st.f24 || '?'}, ${st.f36 || '?'}; OLFs ${st.olf95 || '?'}, ${st.olf96 || '?'}, ${st.olf97 || '?'}; trends freq ${st.freqT || '?'}% sev ${st.sevT || '?'}%; trend periods ${st.tl95 || '?'}, ${st.tl96 || '?'}, ${st.tl97 || '?'}; weights ${st.w95 || '?'}/${st.w96 || '?'}/${st.w97 || '?'}; projected LRs ${c.lr.map(x => pct(x)).join(', ')}; indicated change ${isFinite(c.ind) ? pct(c.ind) : 'n/a'}; recommended filed change ${st.pick ? st.pick + '%' : 'not yet selected'}.`;
   },
 
+  workbook: {
+    inputs: ['B26:D26', 'B38:B39', 'F43:F45', 'H43:H45', 'K43:K45'],
+    cols: { A: 230 },
+    formats: { 'B12:L21': 'int', 'B25:D26': 'dec3', 'B30:B31': 'pct1', 'B34': 'dec3', 'B35:B40': 'pct2', 'B43:B45': 'int', 'C43:C45': 'dec3', 'D43:E45': 'int', 'F43:F45': 'dec4', 'G43:G45': 'int', 'H43:H45': 'dec3', 'I43:I45': 'dec4', 'J43:J45': 'pct1', 'K43:K45': 'pct0', 'B47': 'pct1', 'B48': 'pct2', 'C50:G51': 'pct2', 'B53:B65': 'dec2', 'C53:C65': 'int' },
+    links: [{ cell: 'B26', path: 'f12' }, { cell: 'C26', path: 'f24' }, { cell: 'D26', path: 'f36' },
+      { cell: 'F43', path: 'olf95' }, { cell: 'F44', path: 'olf96' }, { cell: 'F45', path: 'olf97' },
+      { cell: 'H43', path: 'tl95' }, { cell: 'H44', path: 'tl96' }, { cell: 'H45', path: 'tl97' },
+      { cell: 'K43', path: 'w95', scale: 0.01 }, { cell: 'K44', path: 'w96', scale: 0.01 }, { cell: 'K45', path: 'w97', scale: 0.01 },
+      { cell: 'B38', path: 'freqT', scale: 0.01 }, { cell: 'B39', path: 'sevT', scale: 0.01 }],
+  },
   csv() {
     const r = [], L = colL;
     r.push(['OpenActuary | Should We File? (Prairie Mutual) | amounts in $000']);

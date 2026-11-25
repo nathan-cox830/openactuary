@@ -36,6 +36,9 @@ js/ui/motion.js            countUp(root) for [data-count], reveal(root) for [dat
 js/ui/glossary.js          GLOSSARY, terms(), applyGlossary(root) underlines known terms in .prose/.callout
 js/ui/katex.js             renderMath(root): renders <span class="tex">…</span> and <div class="texd">…</div>
 js/ui/modal.js             showModal(html, onAction), closeModal()
+js/ui/formula.js           spreadsheet formula engine (Excel subset): Workbook, shiftFormula, formatValue, FUNCTIONS
+js/ui/sheet.js             spreadsheet grid UI: mountSheet(host, opts), buildWorkbook(rows, overrides), rowsOf()
+css/sheet.css              spreadsheet grid + case workbook drawer
 js/cases/engine.js         generic case workspace
 js/cases/registry.js       list of cases (+ "coming soon" lines)
 js/cases/defs/*.js         one file per case
@@ -83,10 +86,17 @@ Attach event listeners to `el` (not `document`) so they disappear with the view.
 | `practice` | `{ attempts, correct, streak, bestStreak, byTemplate: { <templateId>: [right, total] } }` |
 | `flash` | `{ known: { <term>: true } }` |
 | `interview` | `{ sessions, practiced: { <qid>: count }, flagged: { <qid>: true }, notes: { <qid>: string } }` |
-| `case:<id>` | managed by the case engine |
+| `case:<id>` | managed by the case engine (`wb` holds workbook edits, `wbOpen`/`wbH` the drawer state) |
 | `last` | `{ route, label, at }`, set with `setLast()` so Home can offer "Continue where you left off". `route` may be `learn/bayes` or `#/learn/bayes`; Home handles both. |
 
 Topic keys for Exam P General Probability (use these exact ids everywhere): `sets` (set rules, inclusion–exclusion), `counting` (permutations/combinations), `conditional` (conditional probability), `independence`, `bayes` (Bayes' theorem and the law of total probability).
 
 ## Adding a case
-Create `js/cases/defs/<id>.js` exporting `{ id, title, sub, line, level, levelLabel, minutes, icon, audience, tagline, concepts, exam, inspiration, source, brief(), briefStats?(), primers, exhibits(st), tasks, stages, hints, pickShow, pickHint, model(), debrief(st), modelSummary, judgeBank, context(st), csv?() }` and add it to `js/cases/registry.js`. Task types: `num` (answer, tol or rtol, explain), `multi` (fields, answer(i), tol), `mcq` (options, correct, explain), `bench` (bench name, check(st)), `pick` (the final locked answer). Benches go in `js/cases/benches/` and are registered in `benches/index.js`.
+Create `js/cases/defs/<id>.js` exporting `{ id, title, sub, line, level, levelLabel, minutes, icon, audience, tagline, concepts, exam, inspiration, source, brief(), briefStats?(), primers, exhibits(st), tasks, stages, hints, pickShow, pickHint, model(), debrief(st), modelSummary, judgeBank, context(st), csv?() }` and add it to `js/cases/registry.js`. Optional `workbook: { inputs, formats, cols, checks, links }` turns `csv()` into the in-app case workbook (see below). Task types: `num` (answer, tol or rtol, explain), `multi` (fields, answer(i), tol), `mcq` (options, correct, explain), `bench` (bench name, check(st)), `pick` (the final locked answer). Benches go in `js/cases/benches/` and are registered in `benches/index.js`.
+
+## Spreadsheets (in-app workbook)
+`js/ui/formula.js` is a dependency-free formula engine: A1 and `$A$1` references, ranges, `+ - * / ^ & %`, comparisons, and these functions: SUM, AVERAGE, MIN, MAX, COUNT(A/BLANK/IF/IFS), SUMIF(S), AVERAGEIF(S), SUMPRODUCT, PRODUCT, ROUND(UP/DOWN), INT, MOD, ABS, SQRT, EXP, LN, LOG, POWER, FACT, COMBIN, STDEV, VAR, MEDIAN, IF, IFS, IFERROR, IFNA, AND, OR, NOT, IS*, text functions, VLOOKUP, HLOOKUP, XLOOKUP, INDEX, MATCH, LOGEST, PMT, PV, FV, NPER, NPV, IRR, RATE. Errors follow Excel (`#DIV/0!`, `#VALUE!`, `#REF!`, `#NAME?`, `#N/A`, `#NUM!`), plus `#CIRC!` for circular references.
+
+`mountSheet(host, opts)` in `js/ui/sheet.js` draws an editable grid. Options: `rows` (2D array of raw values: numbers, text, or `=formulas`), `overrides` (the user's edits `{A1: raw}`, mutated in place and passed to `onChange`), `inputs` (ranges shaded as "yours to fill"), `formats` (`{range: 'int'|'dec3'|'pct1'|'money0'…}`), `cols` (`{A: 220}` widths), `checks` (`[{cell, label, answer, tol|rtol}]`, shown as pass/fail chips), `notes` (merge text-only rows into full-width notes). Keyboard: type to replace, F2 to edit, Enter/Tab, arrows (+Shift), Delete, Ctrl/Cmd+C/V/X/Z/Y/D/R, Ctrl+` shows formulas. Clicking a cell while typing a formula inserts its reference; the fill handle copies formulas with relative references shifted.
+
+**Case workbooks:** if a case has `csv()`, the engine shows an "Open workbook" drawer on the Exhibits and Work tabs, built from the same rows as the CSV. Edits save in `case:<id>.wb`. `workbook.links` (`[{cell, path, scale}]`) powers "Use my task inputs" (copies task fields into input cells). Any case answer box accepts a workbook reference such as `=F52`; it is replaced by the value when checked. The CSV download includes the user's edits.

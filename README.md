@@ -5,7 +5,7 @@ Free actuarial exam prep and interactive insurance case studies. **Free forever,
 ## What's inside
 - **Learn:** Exam P General Probability lesson with interactive Venn diagrams and Bayes trees, a formula sheet, and a glossary with flashcards.
 - **Practice:** an Exam P-style quiz with worked solutions, and a problem generator that writes a fresh problem every time.
-- **Cases:** interactive case studies that run Brief → Learn → Exhibits → Work → Recommend → Debrief:
+- **Cases:** interactive case studies that run Brief → Learn → Exhibits → Work → Recommend → Debrief, each with a built-in spreadsheet workbook (live formulas, no Excel needed):
   - *Who's a Risky Driver?* (Exam P level): Bayes' theorem and accident surcharges
   - *The Stale Triangle* (advanced): workers comp reserving on real Schedule P data
   - *Should We File?* (advanced): personal auto rate indication on real Schedule P data
