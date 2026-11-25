@@ -1,32 +1,17 @@
-// Exam P · General Probability formula sheet (#/learn/formulas).
+// Exam P formula sheet (#/learn/formulas): every topic from data/exams.js, one section per topic.
 // Grouped by topic with a "when to use" note per formula; KaTeX display math; print-friendly via css/learn.css.
 import { esc, icon } from '../util.js';
 import { renderMath } from '../ui/katex.js';
-import { FORMULA_GROUPS } from '../../data/exam-p/formulas.js';
+import { loadExam } from '../../data/exams.js';
 
-export const title = 'Formula sheet · General Probability';
+export const title = 'Formula sheet · Exam P';
 
-export function render(el) {
-  el.innerHTML = `
-  <div class="container fsheet">
-    <header class="page-head fs-head">
-      <div>
-        <div class="eyebrow">Exam P · General Probability</div>
-        <h1>Formula sheet</h1>
-        <p class="lede">Every rule from the lesson on one page, with a note on when to reach for it. Print it or save it as a PDF for review.</p>
-      </div>
-      <div class="fs-actions no-print">
-        <button type="button" class="btn primary" data-print>${icon('download')} Print or save PDF</button>
-        <a class="btn ghost" href="#/learn">${icon('book')} Back to the lesson</a>
-      </div>
-    </header>
-    <nav class="fs-jump no-print" aria-label="Jump to a topic">
-      ${FORMULA_GROUPS.map(g => `<a class="chip outline" href="#/learn/formulas" data-jump="fs-${g.id}">${esc(g.title)}</a>`).join('')}
-    </nav>
-    <div class="fs-groups">
-      ${FORMULA_GROUPS.map((g, gi) => `
-      <section class="fs-group card" id="fs-${g.id}" aria-labelledby="fs-${g.id}-h">
-        <div class="fs-gh"><span class="fs-badge" aria-hidden="true">${gi + 1}</span><div><h2 id="fs-${g.id}-h">${esc(g.title)}</h2><p class="small muted">${esc(g.blurb)}</p></div></div>
+export async function render(el) {
+  const TOPICS = await loadExam('p');
+  let gi = 0;
+  const groupHtml = (t, g) => `
+      <section class="fs-group card" id="fs-${t.id}-${g.id}" aria-labelledby="fs-${t.id}-${g.id}-h">
+        <div class="fs-gh"><span class="fs-badge" aria-hidden="true">${++gi}</span><div><h2 id="fs-${t.id}-${g.id}-h">${esc(g.title)}</h2>${g.blurb ? `<p class="small muted">${esc(g.blurb)}</p>` : ''}</div></div>
         <div class="fs-items">
           ${g.items.map(it => `
           <div class="fs-item">
@@ -35,9 +20,25 @@ export function render(el) {
             <p class="fs-when"><span class="fs-wl">When to use</span> ${esc(it.when)}</p>
           </div>`).join('')}
         </div>
-      </section>`).join('')}
-    </div>
-    <p class="tiny muted fs-foot">OpenActuary · free Exam P prep · General Probability formula sheet</p>
+      </section>`;
+  el.innerHTML = `
+  <div class="container fsheet">
+    <header class="page-head fs-head">
+      <div>
+        <div class="eyebrow">Exam P · Probability</div>
+        <h1>Formula sheet</h1>
+        <p class="lede">Every rule from the Exam P lessons on one page, with a note on when to reach for it. Print it or save it as a PDF for review.</p>
+      </div>
+      <div class="fs-actions no-print">
+        <button type="button" class="btn primary" data-print>${icon('download')} Print or save PDF</button>
+        <a class="btn ghost" href="#/learn">${icon('book')} Back to Learn</a>
+      </div>
+    </header>
+    <nav class="fs-jump no-print" aria-label="Jump to a topic">
+      ${TOPICS.map(t => `<span class="fs-jt">${esc(t.short)}</span>${t.formulas.map(g => `<a class="chip outline" href="#/learn/formulas" data-jump="fs-${t.id}-${g.id}">${esc(g.title)}</a>`).join('')}`).join('')}
+    </nav>
+    ${TOPICS.map(t => `<h2 class="fs-topic" id="fs-${t.id}">${esc(t.title)}</h2><div class="fs-groups">${t.formulas.map(g => groupHtml(t, g)).join('')}</div>`).join('')}
+    <p class="tiny muted fs-foot">OpenActuary · free Exam P prep · formula sheet</p>
   </div>`;
   el.addEventListener('click', e => {
     if (e.target.closest('[data-print]')) { window.print(); return; }

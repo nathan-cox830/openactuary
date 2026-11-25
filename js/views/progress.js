@@ -10,16 +10,8 @@ import * as store from '../progress.js';
 
 export const title = 'My progress';
 
-const TOPICS = { sets: 'Sets & inclusion–exclusion', counting: 'Counting', conditional: 'Conditional probability', independence: 'Independence', bayes: 'Bayes & total probability' };
-
-async function lessonTotal() {
-  try {
-    const m = await import('../../data/exam-p/lesson.js');
-    const d = m.default || m.LESSON || m.lesson || m.steps || m.STEPS;
-    const steps = Array.isArray(d) ? d : (d && (d.steps || d.STEPS));
-    return Array.isArray(steps) ? steps.length : 0;
-  } catch (e) { return 0; }
-}
+// Exam P topics and quiz subtopic labels come from the registry (data/exams.js).
+import { loadExam, subtopicLabels } from '../../data/exams.js';
 
 export async function render(el) {
   const learn = store.load('learn', { done: {} });
@@ -27,8 +19,11 @@ export async function render(el) {
   const practice = store.load('practice', { attempts: 0, correct: 0, streak: 0, bestStreak: 0, byTemplate: {} });
   const flash = store.load('flash', { known: {} });
   const interview = store.load('interview', { sessions: 0, practiced: {}, flagged: {} });
-  const total = await lessonTotal();
-  const lessonDone = Object.values(learn.done || {}).filter(Boolean).length;
+  const PT = await loadExam('p'); const TOPICS = subtopicLabels(PT);
+  const done = learn.done || {};
+  const perTopic = PT.map(t => ({ t, n: t.steps.length, d: t.steps.filter(s => done[s.id]).length }));
+  const total = perTopic.reduce((a, x) => a + x.n, 0);
+  const lessonDone = perTopic.reduce((a, x) => a + x.d, 0);
   const cases = CASES.map(def => ({ def, p: progressOf(def, loadState(def)) }));
   const casesDone = cases.filter(c => c.p.locked).length;
   const hist = quiz.history || [];
@@ -53,9 +48,8 @@ export async function render(el) {
 
     <div class="dash-grid">
       <section class="card dash-card" data-reveal>
-        <div class="row between"><h3>${icon('book')} Exam P lesson</h3><a class="btn sm quiet" href="#/learn">Open ${icon('arrow')}</a></div>
-        <div class="row" style="gap:16px;margin-top:10px">${ring(total ? lessonDone / total : 0, { size: 84, label: total ? `${lessonDone}/${total}` : String(lessonDone), done: total && lessonDone >= total })}
-          <p class="small muted" style="margin:0;flex:1;min-width:160px">${lessonDone ? (total && lessonDone >= total ? 'You finished the General Probability lesson. Try the quiz to lock it in.' : 'Pick up at the next unfinished step.') : 'Seven-plus short steps with interactive visuals.'}</p></div>
+        <div class="row between"><h3>${icon('book')} Exam P lessons</h3><a class="btn sm quiet" href="#/learn">Open ${icon('arrow')}</a></div>
+        <div class="dash-topics">${perTopic.map(({ t, n, d }) => `<a class="dash-topic" href="#/learn/p/${t.id}">${ring(n ? d / n : 0, { size: 64, label: `${d}/${n}`, done: n && d >= n })}<span><b>${esc(t.short)}</b><span class="tiny muted">${d >= n ? 'Complete' : d ? 'In progress' : 'Not started'}</span></span></a>`).join('')}</div>
         <div class="flash-row"><span class="small"><b>${known}</b> of ${nTerms} glossary terms marked known</span><div class="bar"><i style="width:${nTerms ? Math.round(100 * known / nTerms) : 0}%"></i></div><a class="small" href="#/learn/glossary">Flashcards →</a></div>
       </section>
 

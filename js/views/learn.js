@@ -1,4 +1,5 @@
-// Exam P · General Probability lesson (#/learn and #/learn/<stepId>).
+// Topic lesson (#/learn/<exam>/<topic>/<stepId>), e.g. #/learn/p/general-probability/bayes.
+// Content comes from data/exams.js; the old #/learn/<stepId> links redirect here from the Learn hub.
 // Sidebar of steps with saved progress (namespace "learn"), one step at a time with prose, KaTeX, a worked
 // example and "check yourself" questions. Two interactive visuals live here too: a to-scale Venn diagram
 // explorer (sets step) and a Bayes' theorem probability tree with a natural-frequencies view (Bayes step).
@@ -8,23 +9,36 @@ import { renderMath } from '../ui/katex.js';
 import { applyGlossary } from '../ui/glossary.js';
 import { ring, animateRings } from '../ui/charts.js';
 import { confetti } from '../ui/motion.js';
-import { STEPS } from '../../data/exam-p/lesson.js';
+import { loadTopic, exam as examOf } from '../../data/exams.js';
+import { distWidget, coverageWidget, jointWidget, cltWidget } from '../ui/prob-widgets.js';
+import { go } from '../router.js';
 
-export const title = 'General Probability lesson';
+export let title = 'Lesson';
 
-const FALLBACK = { done: {}, current: STEPS[0].id };
+// "learn" progress: { done: { stepId: true }, current: <General Probability step>, cur: { topicId: stepId } }
+const FALLBACK = { done: {}, current: null, cur: {} };
 let root = null;
 let cur = 0;
-const getState = () => { const s = load('learn', FALLBACK); s.done = s.done || {}; return s; };
+let STEPS = [];
+let TOPIC = null;
+const getState = () => { const s = load('learn', FALLBACK); s.done = s.done || {}; s.cur = s.cur || {}; return s; };
+const stepHref = id => `#/learn/${TOPIC.examId}/${TOPIC.id}/${id}`;
+const savedStep = st => st.cur[TOPIC.id] || (TOPIC.id === 'general-probability' ? st.current : null);
 
-export function render(el, params) {
+export async function render(el, params) {
   root = el;
+  const [examId, topicId, stepId] = params || [];
+  const t = await loadTopic(examId, topicId);
+  if (!t) { go('learn', { replace: true }); return; }
+  TOPIC = t; STEPS = t.steps; title = t.title; document.title = `${t.title} · OpenActuary`;
+  const ex = examOf(examId); const topics = ex.topics; const ti = topics.findIndex(x => x.id === t.id);
+  const nextTopic = topics[ti + 1];
   el.innerHTML = `
   <div class="container lsn-page">
     <header class="page-head">
-      <div class="eyebrow">Exam P · General Probability</div>
-      <h1>General Probability</h1>
-      <p class="lede">Eight short steps from sample spaces to Bayes' theorem, with interactive visuals and a quick check at the end of each step.</p>
+      <div class="eyebrow"><a href="#/learn">${esc(ex.name)}</a> · Topic ${ti + 1} of ${topics.length}${t.weight ? ` · ${esc(t.weight)} of the exam` : ''}</div>
+      <h1>${esc(t.title)}</h1>
+      <p class="lede">${esc(t.blurb)} ${STEPS.length} short steps, each with a worked example and a quick check.</p>
     </header>
     <div class="lsn">
       <aside class="lsn-side" aria-label="Lesson steps">
@@ -33,6 +47,8 @@ export function render(el, params) {
         <div class="lsn-tools">
           <a class="btn quiet sm" href="#/learn/formulas">${icon('sigma')} Formula sheet</a>
           <a class="btn quiet sm" href="#/learn/glossary">${icon('book')} Glossary &amp; flashcards</a>
+          <a class="btn quiet sm" href="#/practice/quiz/${t.id}">${icon('quiz')} Topic quiz</a>
+          ${nextTopic ? `<a class="btn quiet sm" href="#/learn/${examId}/${nextTopic.id}">${icon('arrow')} Next: ${esc(nextTopic.short)}</a>` : ''}
         </div>
       </aside>
       <article class="lsn-main card" data-main></article>
@@ -40,21 +56,25 @@ export function render(el, params) {
   </div>`;
   el.addEventListener('click', onClick);
   el.addEventListener('change', onChange);
-  showStep(params && params[0]);
+  showStep(stepId);
 }
 
-export function update(params) { if (root) showStep(params && params[0]); }
+export async function update(params) {
+  if (!root) return;
+  if (!TOPIC || params[0] !== TOPIC.examId || params[1] !== TOPIC.id) { root.innerHTML = ''; window.scrollTo(0, 0); return render(root, params); }
+  showStep(params[2]);
+}
 export function destroy() { root = null; }
 
 /* ---------- step rendering ---------- */
 function showStep(id) {
   const st = getState();
   let idx = STEPS.findIndex(s => s.id === id);
-  if (idx < 0) idx = Math.max(0, STEPS.findIndex(s => s.id === st.current));
+  if (idx < 0) idx = Math.max(0, STEPS.findIndex(s => s.id === savedStep(st)));
   cur = idx;
   const step = STEPS[idx];
-  updateStore('learn', s => { s.done = s.done || {}; s.current = step.id; }, FALLBACK);
-  setLast('#/learn/' + step.id, 'Lesson: ' + step.title);
+  updateStore('learn', s => { s.done = s.done || {}; s.cur = s.cur || {}; s.cur[TOPIC.id] = step.id; if (TOPIC.id === 'general-probability') s.current = step.id; }, FALLBACK);
+  setLast(stepHref(step.id), `${TOPIC.short}: ${step.title}`);
   renderSide();
   renderMain();
 }
@@ -69,7 +89,7 @@ function renderSide() {
   const list = root.querySelector('[data-steps]');
   list.innerHTML = STEPS.map((s, i) => {
     const done = !!st.done[s.id], here = i === cur;
-    return `<li><a class="lsn-step${here ? ' cur' : ''}${done ? ' done' : ''}" href="#/learn/${s.id}" ${here ? 'aria-current="step"' : ''}>
+    return `<li><a class="lsn-step${here ? ' cur' : ''}${done ? ' done' : ''}" href="${stepHref(s.id)}" ${here ? 'aria-current="step"' : ''}>
       <span class="lsn-num" aria-hidden="true">${done ? icon('check') : i + 1}</span>
       <span class="lsn-t">${esc(s.short)}<small>${s.minutes} min${done ? ' · done' : ''}</small></span>
       ${done ? '<span class="sr-only">(completed)</span>' : ''}</a></li>`;
@@ -100,12 +120,13 @@ function renderMain() {
     </section>
     ${next ? '' : finishBox()}
     <nav class="lsn-pager" aria-label="Step navigation">
-      ${prev ? `<a class="btn ghost" href="#/learn/${prev.id}">${icon('back')} <span>Previous</span></a>` : '<span></span>'}
+      ${prev ? `<a class="btn ghost" href="${stepHref(prev.id)}">${icon('back')} <span>Previous</span></a>` : '<span></span>'}
       <button type="button" class="btn ${done ? 'ghost is-done' : 'primary'}" data-act="complete" aria-pressed="${done}">${done ? icon('check') + ' Completed' : 'Mark complete'}</button>
-      ${next ? `<a class="btn ghost" href="#/learn/${next.id}"><span>Next</span> ${icon('arrow')}</a>` : '<a class="btn ghost" href="#/practice/quiz"><span>Take the quiz</span> ' + icon('arrow') + '</a>'}
+      ${next ? `<a class="btn ghost" href="${stepHref(next.id)}"><span>Next</span> ${icon('arrow')}</a>` : `<a class="btn ghost" href="#/practice/quiz/${TOPIC.id}"><span>Take the quiz</span> ${icon('arrow')}</a>`}
     </nav>`;
   const w = main.querySelector('[data-widget]');
-  if (w) (w.dataset.widget === 'venn' ? vennWidget : bayesWidget)(w);
+  const WIDGETS = { venn: vennWidget, bayes: bayesWidget, dist: distWidget, coverage: coverageWidget, joint: jointWidget, clt: cltWidget };
+  if (w && WIDGETS[w.dataset.widget]) WIDGETS[w.dataset.widget](w);
   renderMath(main);
   applyGlossary(main);
 }
@@ -115,8 +136,8 @@ function finishBox() {
     <h3 id="fin-h">Where to next</h3>
     <div class="lsn-next">
       <a class="card lift lsn-go" href="#/learn/formulas">${icon('sigma')}<b>Formula sheet</b><span class="small muted">Every rule from this lesson on one printable page.</span></a>
-      <a class="card lift lsn-go" href="#/practice/quiz">${icon('quiz')}<b>Practice quiz</b><span class="small muted">20 exam-style questions with full solutions.</span></a>
-      <a class="card lift lsn-go" href="#/practice">${icon('dice')}<b>Problem generator</b><span class="small muted">Endless fresh problems on every topic.</span></a>
+      <a class="card lift lsn-go" href="#/practice/quiz/${TOPIC.id}">${icon('quiz')}<b>Topic quiz</b><span class="small muted">${TOPIC.questions.length} exam-style questions with full solutions.</span></a>
+      <a class="card lift lsn-go" href="#/practice/${TOPIC.id}">${icon('dice')}<b>Problem generator</b><span class="small muted">Endless fresh ${esc(TOPIC.short)} problems.</span></a>
     </div>
   </section>`;
 }
@@ -164,7 +185,7 @@ function toggleComplete() {
   btn.setAttribute('aria-pressed', String(nowDone));
   btn.innerHTML = nowDone ? icon('check') + ' Completed' : 'Mark complete';
   renderSide();
-  if (nowDone && allDone) { confetti(); toast('Lesson complete. Try the practice quiz next.'); }
+  if (nowDone && allDone) { confetti(); toast(`${TOPIC.title} complete. Try the topic quiz next.`); }
   else if (nowDone) toast(STEPS[cur + 1] ? `Step ${cur + 1} done. On to "${STEPS[cur + 1].short}".` : 'Step done.');
 }
 

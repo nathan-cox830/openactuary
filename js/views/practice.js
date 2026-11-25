@@ -6,35 +6,51 @@ import { esc, icon, pct } from '../util.js';
 import { load, update as updateStore, setLast } from '../progress.js';
 import { renderMath } from '../ui/katex.js';
 import { applyGlossary } from '../ui/glossary.js';
-import { TEMPLATES, LEVELS, makeProblem } from '../../data/exam-p/generator.js';
-import { TOPICS } from '../../data/exam-p/quiz.js';
+import { LEVELS } from '../../data/exam-p/generator.js';
+import { loadExam, subtopicLabels, makeProblemFrom } from '../../data/exams.js';
 
-export const title = 'Problem generator · General Probability';
+export const title = 'Problem generator';
 
 const LET = ['A', 'B', 'C', 'D', 'E'];
 const FALLBACK = { attempts: 0, correct: 0, streak: 0, bestStreak: 0, byTemplate: {} };
 let root = null;
-const ui = { topics: new Set(Object.keys(TOPICS)), diff: 'mixed' };
+// area: one Exam P topic (e.g. 'univariate'); ui.topics: the subtopics switched on within it.
+let ALL = [], ALLT = [], TEMPLATES = [], TOPICS = {}, area = null;
+const ui = { topics: new Set(), diff: 'mixed' };
+const makeProblem = (tid, level, seed) => makeProblemFrom(ALLT, tid, level, seed);
+function setArea(id) {
+  const t = ALL.find(x => x.id === id) || ALL[0]; area = t.id;
+  TEMPLATES = t.templates; ui.topics = new Set(TEMPLATES.map(x => x.topic));
+  try { history.replaceState(null, '', '#/practice/' + area); } catch (e) { }
+  setLast('#/practice/' + area, 'Problem generator: ' + t.short);
+}
+function topicChips() {
+  return [...new Set(TEMPLATES.map(x => x.topic))].map(k => `<button type="button" class="chip" data-topic="${k}" aria-pressed="${ui.topics.has(k)}">${esc(TOPICS[k] || k)}</button>`).join('');
+}
 let prob = null, answered = false;
 const counted = new Set();                 // problems already scored in this visit (repeats don't count twice)
 const stats = () => { const s = load('practice', FALLBACK); s.byTemplate = s.byTemplate || {}; return s; };
 
-export function render(el) {
+export async function render(el, params) {
   root = el;
+  ALL = await loadExam('p'); ALLT = ALL.flatMap(t => t.templates); TOPICS = subtopicLabels(ALL);
+  setArea(params && params[0]);
   el.innerHTML = `
   <div class="container gen-page">
     <header class="page-head">
       <div class="eyebrow">Exam P · Practice</div>
       <h1>Problem generator</h1>
-      <p class="lede">Fresh General Probability problems every time, each with a step-by-step solution using the actual numbers. Pick topics and difficulty, then keep your streak going.</p>
+      <p class="lede">Fresh Exam P problems every time, each with a step-by-step solution using the actual numbers. Pick a topic and difficulty, then keep your streak going.</p>
     </header>
     <div class="gen-layout">
       <aside class="gen-side">
         <section class="card gen-ctrl" aria-labelledby="gen-t-h">
-          <h3 id="gen-t-h" class="gen-h">Topics</h3>
-          <div class="chips gen-topics" role="group" aria-label="Topics">
-            ${Object.entries(TOPICS).map(([k, l]) => `<button type="button" class="chip" data-topic="${k}" aria-pressed="true">${esc(l)}</button>`).join('')}
+          <h3 id="gen-t-h" class="gen-h">Exam P topic</h3>
+          <div class="chips gen-area" role="group" aria-label="Exam P topic">
+            ${ALL.map(t => `<button type="button" class="chip" data-area="${t.id}" aria-pressed="${t.id === area}">${esc(t.short)}</button>`).join('')}
           </div>
+          <h3 class="gen-h">Problem types</h3>
+          <div class="chips gen-topics" role="group" aria-label="Problem types" data-topics>${topicChips()}</div>
           <h3 class="gen-h">Difficulty</h3>
           <div class="seg gen-diff" role="group" aria-label="Difficulty">
             ${[['mixed', 'Mixed'], ['1', 'Easy'], ['2', 'Medium'], ['3', 'Hard']].map(([k, l]) => `<button type="button" data-diff="${k}" aria-pressed="${k === ui.diff}">${l}</button>`).join('')}
@@ -48,7 +64,6 @@ export function render(el) {
   </div>`;
   el.addEventListener('click', onClick);
   el.addEventListener('change', onChange);
-  setLast('#/practice', 'Problem generator');
   drawStats();
   next();
 }
@@ -125,7 +140,7 @@ function drawStats(bump) {
   root.querySelector('[data-stats]').innerHTML = `
     <div class="kpi hero${bump ? ' bump' : ''}"><div class="l">Current streak</div><div class="v">${s.streak || 0}</div><div class="tiny muted">Best ${s.bestStreak || 0}</div></div>
     <div class="kpi"><div class="l">Accuracy</div><div class="v">${acc == null ? '—' : pct(acc, 0)}</div><div class="tiny muted">${s.correct || 0} of ${s.attempts || 0} correct</div></div>`;
-  const rows = TEMPLATES.map(t => { const b = s.byTemplate[t.id]; return `<tr><td class="wrap">${esc(t.name)}<div class="tiny muted">${esc(TOPICS[t.topic])}</div></td><td class="num">${b ? `${b[0]}/${b[1]}` : '—'}</td><td class="num">${b && b[1] ? pct(b[0] / b[1], 0) : '—'}</td></tr>`; }).join('');
+  const rows = ALLT.map(t => { const b = s.byTemplate[t.id]; return `<tr><td class="wrap">${esc(t.name)}<div class="tiny muted">${esc(TOPICS[t.topic])}</div></td><td class="num">${b ? `${b[0]}/${b[1]}` : '—'}</td><td class="num">${b && b[1] ? pct(b[0] / b[1], 0) : '—'}</td></tr>`; }).join('');
   root.querySelector('[data-by]').innerHTML = `<div class="tblwrap"><table><thead><tr><th>Problem type</th><th>Right</th><th>Rate</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
@@ -134,6 +149,13 @@ function onChange(e) {
   if (e.target.name === 'gen' && !answered) { const b = root.querySelector('[data-act="check"]'); if (b) b.disabled = false; }
 }
 function onClick(e) {
+  const ar = e.target.closest('[data-area]');
+  if (ar) {
+    setArea(ar.dataset.area);
+    root.querySelectorAll('[data-area]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.area === area)));
+    root.querySelector('[data-topics]').innerHTML = topicChips();
+    next(); return;
+  }
   const tp = e.target.closest('[data-topic]');
   if (tp) {
     const k = tp.dataset.topic;

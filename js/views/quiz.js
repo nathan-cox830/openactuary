@@ -8,9 +8,9 @@ import { load, update as updateStore, setLast } from '../progress.js';
 import { renderMath } from '../ui/katex.js';
 import { ring, animateRings } from '../ui/charts.js';
 import { confetti, countUp } from '../ui/motion.js';
-import { QUESTIONS, TOPICS } from '../../data/exam-p/quiz.js';
+import { loadExam, subtopicLabels } from '../../data/exams.js';
 
-export const title = 'Practice quiz · General Probability';
+export const title = 'Practice quiz';
 
 const PACE = 360;                         // Exam P: about 6 minutes per question
 const LET = ['A', 'B', 'C', 'D', 'E'];
@@ -19,20 +19,32 @@ const FALLBACK = { history: [], missed: {}, best: 0 };
 let root = null, timer = null;
 let run = null;                           // { mode, qs, ans, i, t0, timed }
 let opts = { timed: true };
+// Scope: one Exam P topic, or 'all' (a mixed quiz across every topic, like the real exam).
+let ALL = [], QUESTIONS = [], TOPICS = {}, scope = 'all';
+function setScope(id) {
+  scope = ALL.some(t => t.id === id) ? id : 'all';
+  QUESTIONS = scope === 'all' ? ALL.flatMap(t => t.questions) : ALL.find(t => t.id === scope).questions;
+  const t = ALL.find(x => x.id === scope);
+  const lede = root.querySelector('[data-lede]');
+  if (lede) lede.textContent = `Original exam-style questions on ${t ? t.title : 'all of Exam P'}, five choices each, with a full worked solution for every one.`;
+  try { history.replaceState(null, '', '#/practice/quiz' + (scope === 'all' ? '' : '/' + scope)); } catch (e) { }
+  setLast('#/practice/quiz' + (scope === 'all' ? '' : '/' + scope), 'Practice quiz' + (t ? ': ' + t.short : ''));
+}
 
-export function render(el) {
+export async function render(el, params) {
   root = el; run = null;
+  ALL = await loadExam('p'); TOPICS = subtopicLabels(ALL);
   el.innerHTML = `<div class="container qz-page">
     <header class="page-head">
       <div class="eyebrow">Exam P · Practice</div>
       <h1>Practice quiz</h1>
-      <p class="lede">Original exam-style questions on General Probability, five choices each, with a full worked solution for every one.</p>
+      <p class="lede" data-lede></p>
     </header>
     <div data-body></div>
   </div>`;
   el.addEventListener('click', onClick);
   el.addEventListener('change', onChange);
-  setLast('#/practice/quiz', 'Practice quiz');
+  setScope(params && params[0]);
   drawStart();
 }
 export function destroy() { stopTimer(); root = null; run = null; }
@@ -47,7 +59,12 @@ function drawStart() {
   const s = store(); const nMissed = QUESTIONS.filter(q => s.missed[q.id]).length;
   const last = s.history[s.history.length - 1];
   const body = root.querySelector('[data-body]');
-  body.innerHTML = `
+  const scopeBar = `<div class="qz-scope" role="group" aria-label="Quiz topic">
+      <button type="button" class="chip" data-scope="all" aria-pressed="${scope === 'all'}">All of Exam P · ${ALL.reduce((n, t) => n + t.questions.length, 0)}</button>
+      ${ALL.map(t => `<button type="button" class="chip" data-scope="${t.id}" aria-pressed="${scope === t.id}">${esc(t.short)} · ${t.questions.length}</button>`).join('')}
+    </div>`;
+  const full = scope === 'all' ? Math.min(30, QUESTIONS.length) : QUESTIONS.length;
+  body.innerHTML = `${scopeBar}
     <div class="qz-start">
       <div class="qz-modes">
         <button type="button" class="card lift qz-mode" data-start="quick">
@@ -55,7 +72,7 @@ function drawStart() {
           <b>Quick quiz</b><span class="small muted">10 random questions · about 60 minutes at exam pace</span></button>
         <button type="button" class="card lift qz-mode" data-start="full">
           <span class="qz-mode-ic" aria-hidden="true">${icon('layers')}</span>
-          <b>Full set</b><span class="small muted">All ${QUESTIONS.length} questions in random order</span></button>
+          <b>${scope === 'all' ? 'Exam-length quiz' : 'Full set'}</b><span class="small muted">${scope === 'all' ? `${full} questions across every topic, like the real 3-hour exam` : `All ${full} questions in random order`}</span></button>
         <button type="button" class="card lift qz-mode" data-start="missed" ${nMissed ? '' : 'disabled aria-disabled="true"'}>
           <span class="qz-mode-ic" aria-hidden="true">${icon('refresh')}</span>
           <b>Review my missed questions</b><span class="small muted">${nMissed ? `${nMissed} question${nMissed === 1 ? '' : 's'} to review` : 'Nothing to review yet'}</span></button>
@@ -68,7 +85,7 @@ function drawStart() {
           <div class="kpi"><div class="l">Quizzes taken</div><div class="v">${s.history.length}</div></div>
           <div class="kpi"><div class="l">Last score</div><div class="v">${last ? `${last.score}/${last.total}` : '—'}</div></div>
         </div>
-        <p class="small muted">Topics: ${Object.values(TOPICS).map(esc).join(' · ')}.</p>
+        <p class="small muted">Covers: ${[...new Set(QUESTIONS.map(q => q.topic))].map(k => esc(TOPICS[k] || k)).join(' · ')}.</p>
       </div>
     </div>`;
 }
@@ -78,6 +95,7 @@ function start(mode) {
   let qs = mode === 'missed' ? QUESTIONS.filter(q => s.missed[q.id]) : QUESTIONS.slice();
   shuffle(qs);
   if (mode === 'quick') qs = qs.slice(0, 10);
+  if (mode === 'full' && scope === 'all') qs = qs.slice(0, 30);
   if (!qs.length) return;
   run = { mode, qs, ans: qs.map(() => null), i: 0, t0: Date.now(), timed: opts.timed };
   drawQuestion(true);
@@ -144,6 +162,7 @@ function onChange(e) {
 }
 
 function onClick(e) {
+  const sc = e.target.closest('[data-scope]'); if (sc) { setScope(sc.dataset.scope); drawStart(); return; }
   const st = e.target.closest('[data-start]'); if (st && !st.disabled) { start(st.dataset.start); return; }
   const go = e.target.closest('[data-go]'); if (go && run) { run.i = +go.dataset.go; drawQuestion(false); return; }
   const a = e.target.closest('[data-act]'); if (!a) return;
@@ -176,7 +195,7 @@ function finish() {
   updateStore('quiz', s => {
     s.history = s.history || []; s.missed = s.missed || {};
     prevBest = s.history.length ? (s.best || 0) : -1;
-    s.history.push({ at: Date.now(), score, total, secs, byTopic });
+    s.history.push({ at: Date.now(), score, total, secs, byTopic, scope });
     if (s.history.length > 100) s.history = s.history.slice(-100);
     qs.forEach((q, k) => { if (ans[k] === q.answer) delete s.missed[q.id]; else s.missed[q.id] = true; });
     s.best = Math.max(s.best || 0, pc);

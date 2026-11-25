@@ -3,8 +3,8 @@
 Free actuarial exam prep and interactive insurance case studies. **Free forever, for everyone:** no accounts, no server, no API keys, no ads and no tracking. Everything runs in the visitor's browser, and progress is saved on their device.
 
 ## What's inside
-- **Learn:** Exam P General Probability lesson with interactive Venn diagrams and Bayes trees, a formula sheet, and a glossary with flashcards.
-- **Practice:** an Exam P-style quiz with worked solutions, and a problem generator that writes a fresh problem every time.
+- **Learn:** lessons on all three Exam P topics (General Probability, Univariate and Multivariate Random Variables) with interactive Venn diagrams, Bayes trees, a distribution explorer, a deductible and limit explorer, a joint distribution table and a central limit theorem simulator, plus a formula sheet and a glossary with flashcards.
+- **Practice:** Exam P-style quizzes for each topic or across the whole exam, with worked solutions, and a problem generator that writes a fresh problem every time.
 - **Cases:** interactive case studies that run Brief → Learn → Exhibits → Work → Recommend → Debrief, each with a built-in spreadsheet workbook (live formulas, no Excel needed):
   - *Who's a Risky Driver?* (Exam P level): Bayes' theorem and accident surcharges
   - *The Stale Triangle* (advanced): workers comp reserving on real Schedule P data
@@ -40,7 +40,7 @@ The only outside requests are for Google Fonts and KaTeX (from cdnjs). If those 
 ## Add content
 - **A new case:** see "Adding a case" in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Each case is one file in `js/cases/defs/`, plus any calculators in `js/cases/benches/`. Life, health and retirement cases plug into the same engine.
 - **Glossary terms:** `data/glossary-insurance.js` and `data/exam-p/glossary.js`.
-- **Exam P content:** `data/exam-p/`.
+- **Exam content:** topics are listed in `data/exams.js`; each topic's lesson, quiz, generator, formulas and glossary live in its own folder under `data/exam-p/`.
 - **Careers content:** `data/careers/`.
 
 ## Data and credits

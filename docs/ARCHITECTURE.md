@@ -45,7 +45,10 @@ js/cases/defs/*.js         one file per case
 js/cases/benches/*.js      interactive calculators used by cases
 data/glossary-insurance.js insurance terms   { term: definition }
 data/exam-p/glossary.js    probability terms { term: definition }
-data/exam-p/*.js           Exam P lesson, quiz, generator content
+data/exams.js              exam/topic registry: EXAMS, loadTopic, loadExam, subtopicLabels, makeProblemFrom
+data/exam-p/*.js           Exam P · General Probability lesson, quiz, generator, formulas (also buildChoices)
+data/exam-p/<topic>/*.js   Exam P · univariate/ and multivariate/ topics (same five files each)
+js/ui/prob-widgets.js      lesson widgets: distWidget, coverageWidget, jointWidget, cltWidget (+ gammaP)
 data/careers/*.js          job links, interview questions
 ```
 
@@ -53,11 +56,12 @@ data/careers/*.js          job links, interview questions
 | Hash | View module | Notes |
 |---|---|---|
 | `#/` | views/home.js | |
-| `#/learn`, `#/learn/<step>` | views/learn.js | General Probability lesson |
-| `#/learn/formulas` | views/formulas.js | KaTeX formula sheet |
+| `#/learn` | views/learn-hub.js | every exam and topic with progress. Old `#/learn/<step>` links redirect to the topic lesson |
+| `#/learn/<exam>/<topic>[/<step>]` | views/learn.js | topic lesson, e.g. `#/learn/p/univariate/uv-exponential` |
+| `#/learn/formulas` | views/formulas.js | KaTeX formula sheet, all Exam P topics |
 | `#/learn/glossary` | views/glossary.js | searchable glossary + flashcards |
-| `#/practice` | views/practice.js | problem generator |
-| `#/practice/quiz` | views/quiz.js | 20-question quiz |
+| `#/practice[/<topic>]` | views/practice.js | problem generator for one topic |
+| `#/practice/quiz[/<topic>]` | views/quiz.js | topic quiz, or a mixed exam-length quiz across all topics |
 | `#/cases`, `#/cases/<id>/<tab>` | views/cases.js, views/case.js | case library / workspace |
 | `#/careers` | views/careers.js | job links + path guide |
 | `#/careers/interview` | views/interview.js | timed mock interview |
@@ -81,15 +85,27 @@ Attach event listeners to `el` (not `document`) so they disappear with the view.
 ## Progress namespaces (the Progress dashboard reads these, so keep the shapes)
 | Namespace | Shape |
 |---|---|
-| `learn` | `{ done: { <stepId>: true }, current: <stepId> }` |
-| `quiz` | `{ history: [{ at: ms, score, total, secs, byTopic: { <topic>: [right, total] } }], missed: { <qid>: true }, best: percent 0–100 }` |
+| `learn` | `{ done: { <stepId>: true }, cur: { <topicId>: <stepId> }, current: <General Probability stepId, legacy> }`. Step ids are unique site-wide. |
+| `quiz` | `{ history: [{ at: ms, score, total, secs, byTopic: { <subtopic>: [right, total] }, scope: <topicId or 'all'> }], missed: { <qid>: true }, best: percent 0–100 }` |
 | `practice` | `{ attempts, correct, streak, bestStreak, byTemplate: { <templateId>: [right, total] } }` |
 | `flash` | `{ known: { <term>: true } }` |
 | `interview` | `{ sessions, practiced: { <qid>: count }, flagged: { <qid>: true }, notes: { <qid>: string } }` |
 | `case:<id>` | managed by the case engine (`wb` holds workbook edits, `wbOpen`/`wbH` the drawer state) |
 | `last` | `{ route, label, at }`, set with `setLast()` so Home can offer "Continue where you left off". `route` may be `learn/bayes` or `#/learn/bayes`; Home handles both. |
 
-Topic keys for Exam P General Probability (use these exact ids everywhere): `sets` (set rules, inclusion–exclusion), `counting` (permutations/combinations), `conditional` (conditional probability), `independence`, `bayes` (Bayes' theorem and the law of total probability).
+## Exams and topics
+`data/exams.js` lists each exam and its topics. A topic folder has five modules: `lesson.js` (`LESSON`, `STEPS`), `quiz.js` (`QUESTIONS`, `TOPICS` = subtopic labels), `generator.js` (`TEMPLATES`), `formulas.js` (`FORMULA_GROUPS`) and `glossary.js` (default `{ term: definition }`, merged in `js/ui/glossary.js`). Views load topics with `loadTopic(exam, topic)` / `loadExam(exam)`; a missing or broken topic is skipped rather than breaking the page. Ids for lesson steps, quiz questions and templates must be unique across the site (prefix them: `uv-`, `mv-`).
+
+Generator templates return `{ q, answer, wrongs, kind, steps, params }` where `kind` is `prob` (4-dp probability), `int` (whole number) or `num` (any other decimal: means, variances, payments). `buildChoices` in `data/exam-p/generator.js` turns that into five choices.
+
+Lesson steps can set `widget` to `venn`, `bayes` (in views/learn.js), `dist`, `coverage`, `joint` or `clt` (js/ui/prob-widgets.js).
+
+Quiz subtopic keys (use these exact ids):
+- General Probability: `sets`, `counting`, `conditional`, `independence`, `bayes`
+- Univariate: `rv`, `moments`, `discrete`, `continuous`, `coverage`
+- Multivariate: `joint`, `condexp`, `covariance`, `sums`, `orderclt`
+
+Test generator templates without a browser: `/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc -m test.mjs` runs ES modules on macOS (use `print()`).
 
 ## Adding a case
 Create `js/cases/defs/<id>.js` exporting `{ id, title, sub, line, level, levelLabel, minutes, icon, audience, tagline, concepts, exam, inspiration, source, brief(), briefStats?(), primers, exhibits(st), tasks, stages, hints, pickShow, pickHint, model(), debrief(st), modelSummary, judgeBank, context(st), csv?() }` and add it to `js/cases/registry.js`. Optional `workbook: { inputs, formats, cols, checks, links }` turns `csv()` into the in-app case workbook (see below). Task types: `num` (answer, tol or rtol, explain), `multi` (fields, answer(i), tol), `mcq` (options, correct, explain), `bench` (bench name, check(st)), `pick` (the final locked answer). Benches go in `js/cases/benches/` and are registered in `benches/index.js`.

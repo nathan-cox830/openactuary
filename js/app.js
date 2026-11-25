@@ -7,9 +7,10 @@ import { initGlossaryTips } from './ui/glossary.js';
 /* ---------- routes (most specific first) ---------- */
 route(/^learn\/formulas$/, () => import('./views/formulas.js'), 'learn');
 route(/^learn\/glossary$/, () => import('./views/glossary.js'), 'learn');
-route(/^learn(?:\/([\w-]+))?$/, () => import('./views/learn.js'), 'learn');
-route(/^practice\/quiz$/, () => import('./views/quiz.js'), 'practice');
-route(/^practice$/, () => import('./views/practice.js'), 'practice');
+route(/^learn\/(p|fm)\/([\w-]+)(?:\/([\w-]+))?$/, () => import('./views/learn.js'), 'learn');
+route(/^learn(?:\/([\w-]+))?$/, () => import('./views/learn-hub.js'), 'learn');
+route(/^practice\/quiz(?:\/([\w-]+))?$/, () => import('./views/quiz.js'), 'practice');
+route(/^practice(?:\/([\w-]+))?$/, () => import('./views/practice.js'), 'practice');
 route(/^cases\/([\w-]+)(?:\/(\w+))?$/, () => import('./views/case.js'), 'cases');
 route(/^cases$/, () => import('./views/cases.js'), 'cases');
 route(/^careers\/interview$/, () => import('./views/interview.js'), 'careers');

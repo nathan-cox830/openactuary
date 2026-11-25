@@ -290,17 +290,23 @@ function shuffle(r, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math
 
 /** Five choices: the answer plus four distinct wrong values (common mistakes first, then nearby fillers). */
 export function buildChoices(r, answer, wrongs, kind) {
-  const fmt = kind === 'int' ? (v => Math.round(v).toLocaleString('en-US')) : (v => v.toFixed(4));
-  // wrong values must be valid answers too: whole numbers ≥ 1, or probabilities that display strictly between 0 and 1
-  const ok = v => isFinite(v) && (kind === 'int' ? v >= 1 && Math.abs(v - Math.round(v)) < 1e-9 : +fmt(v) > 0 && +fmt(v) < 1);
+  // 'int': whole numbers; 'prob': probabilities to 4 dp; 'num': any other decimal (means, variances, payments)
+  const fmtNum = v => Math.abs(v) >= 1000 ? v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : String(+v.toPrecision(Math.abs(v) >= 1 ? 6 : 4));
+  const fmt = kind === 'int' ? (v => Math.round(v).toLocaleString('en-US')) : kind === 'num' ? fmtNum : (v => v.toFixed(4));
+  // wrong values must be valid answers too: whole numbers ≥ 1, probabilities that display strictly between 0 and 1,
+  // or (for 'num') finite values with the same sign as the answer
+  const ok = v => isFinite(v) && (kind === 'int' ? v >= 1 && Math.abs(v - Math.round(v)) < 1e-9
+    : kind === 'num' ? (answer >= 0 ? v >= 0 : v < 0) && Math.abs(v) > 1e-9
+    : +fmt(v) > 0 && +fmt(v) < 1);
   const ansT = fmt(answer); const seen = new Set([ansT]); const out = [];
   const add = v => { if (out.length >= 4 || !ok(v)) return; const s = fmt(v); if (seen.has(s)) return; seen.add(s); out.push({ text: s, value: v, correct: false }); };
   wrongs.forEach(add);
   const fill = kind === 'int'
     ? [answer * 2, Math.round(answer / 2), answer + 1, answer - 1, answer + 2, answer * 3, answer + 10, answer - 2]
+    : kind === 'num' ? [answer * 1.25, answer * 0.8, answer * 1.5, answer * 0.6, answer * 2, answer / 2, answer * 1.1, answer * 0.9, answer * 3]
     : [answer * 1.25, answer * 0.8, answer + 0.05, answer - 0.05, answer * 1.5, answer * 0.6, answer + 0.1, answer - 0.1, answer * 2, answer / 2, answer + 0.02, answer - 0.02];
   fill.forEach(add);
-  for (let k = 1; out.length < 4 && k < 200; k++) add(kind === 'int' ? answer + 3 * k : answer + 0.0137 * k);
+  for (let k = 1; out.length < 4 && k < 200; k++) add(kind === 'int' ? answer + 3 * k : kind === 'num' ? answer * (1 + 0.07 * k) : answer + 0.0137 * k);
   out.push({ text: ansT, value: answer, correct: true });
   return shuffle(r, out);
 }
