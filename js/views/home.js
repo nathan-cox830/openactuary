@@ -28,7 +28,7 @@ export function render(el) {
   </section>
 
   <section class="container stats-strip" data-reveal>
-    <div><b data-count="3">3</b><span>interactive cases</span></div>
+    <div><b data-count="${CASES.length}">${CASES.length}</b><span>interactive cases</span></div>
     <div><b>∞</b><span>fresh practice problems</span></div>
     <div><b data-count="0" data-prefix="$">$0</b><span>forever, for everyone</span></div>
     <div><b data-count="0">0</b><span>accounts needed</span></div>

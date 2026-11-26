@@ -3,5 +3,8 @@
 import * as reserving from './reserving.js';
 import * as pricing from './pricing.js';
 import * as probability from './probability.js';
+import * as life from './life.js';
+import * as pension from './pension.js';
+import * as health from './health.js';
 
-export default { ...reserving, ...pricing, ...probability };
+export default { ...reserving, ...pricing, ...probability, ...life, ...pension, ...health };
