@@ -479,7 +479,7 @@ mark { background: var(--hl); color: inherit; border-radius: 3px; padding: 0 1px
 .hub-exam-h { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
 .hub-exam-h h2 { margin: 2px 0 0; }
 .hub-blurb { max-width: 70ch; margin: 6px 0 18px; }
-.hub-topics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.hub-topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; }
 .hub-topic { display: flex; flex-direction: column; gap: 10px; }
 .hub-topic h3 { margin: 0; font-size: 19px; }
 .hub-topic p { margin: 0; flex: 1; }
@@ -535,3 +535,17 @@ svg .pw-gl { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
 .pw-bar i { display: block; height: 10px; border-radius: 99px; background: var(--chart-1); min-width: 2px; }
 .pw-bar b { font-family: var(--font-mono); font-size: 13px; text-align: right; }
 @media (max-width: 760px) { .pw-grid, .pw-grid-joint { grid-template-columns: 1fr; } }
+.fs-exams { margin: 0 0 14px; }
+.qz-exam { margin-right: 6px; }
+.gen-exam { margin-bottom: 14px; }
+
+/* ---------- Exam FM widgets (js/ui/fm-widgets.js) ---------- */
+.fm-cf { stroke-width: 3; stroke-linecap: round; }
+.fm-cf.in, .fm-cfd.in { stroke: var(--good); fill: var(--good); }
+.fm-cf.out, .fm-cfd.out { stroke: var(--bad); fill: var(--bad); }
+.fm-int { fill: var(--chart-3); }
+.fm-prin { fill: var(--chart-1); }
+.fm-key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: -1px; }
+.fm-key.fm-int { background: var(--chart-3); } .fm-key.fm-prin { background: var(--chart-1); }
+.fm-flows input { width: 86px; font: 600 13px var(--font-mono); padding: 4px 6px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface); color: var(--ink); }
+.fm-flows td { padding: 3px 4px; }

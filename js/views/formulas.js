@@ -1,13 +1,15 @@
-// Exam P formula sheet (#/learn/formulas): every topic from data/exams.js, one section per topic.
+// Formula sheet (#/learn/formulas[/<exam>]): every topic of one exam from data/exams.js, one section per topic.
 // Grouped by topic with a "when to use" note per formula; KaTeX display math; print-friendly via css/learn.css.
 import { esc, icon } from '../util.js';
 import { renderMath } from '../ui/katex.js';
-import { loadExam } from '../../data/exams.js';
+import { loadExam, exam as examOf, liveExams } from '../../data/exams.js';
 
-export const title = 'Formula sheet · Exam P';
+export let title = 'Formula sheet';
 
-export async function render(el) {
-  const TOPICS = await loadExam('p');
+export async function render(el, params) {
+  const EX = examOf((params && params[0]) || 'p') || examOf('p');
+  const TOPICS = await loadExam(EX.id);
+  title = `Formula sheet · ${EX.name}`; document.title = `${title} · OpenActuary`;
   let gi = 0;
   const groupHtml = (t, g) => `
       <section class="fs-group card" id="fs-${t.id}-${g.id}" aria-labelledby="fs-${t.id}-${g.id}-h">
@@ -25,20 +27,21 @@ export async function render(el) {
   <div class="container fsheet">
     <header class="page-head fs-head">
       <div>
-        <div class="eyebrow">Exam P · Probability</div>
+        <div class="eyebrow">${esc(EX.name)} · ${esc(EX.title)}</div>
         <h1>Formula sheet</h1>
-        <p class="lede">Every rule from the Exam P lessons on one page, with a note on when to reach for it. Print it or save it as a PDF for review.</p>
+        <p class="lede">Every rule from the ${esc(EX.name)} lessons on one page, with a note on when to reach for it. Print it or save it as a PDF for review.</p>
       </div>
       <div class="fs-actions no-print">
         <button type="button" class="btn primary" data-print>${icon('download')} Print or save PDF</button>
         <a class="btn ghost" href="#/learn">${icon('book')} Back to Learn</a>
       </div>
     </header>
+    ${liveExams().length > 1 ? `<div class="seg fs-exams no-print" role="group" aria-label="Exam">${liveExams().map(e => `<a class="segl" href="#/learn/formulas/${e.id}" aria-current="${e.id === EX.id ? 'page' : 'false'}">${esc(e.name)}</a>`).join('')}</div>` : ''}
     <nav class="fs-jump no-print" aria-label="Jump to a topic">
       ${TOPICS.map(t => `<span class="fs-jt">${esc(t.short)}</span>${t.formulas.map(g => `<a class="chip outline" href="#/learn/formulas" data-jump="fs-${t.id}-${g.id}">${esc(g.title)}</a>`).join('')}`).join('')}
     </nav>
     ${TOPICS.map(t => `<h2 class="fs-topic" id="fs-${t.id}">${esc(t.title)}</h2><div class="fs-groups">${t.formulas.map(g => groupHtml(t, g)).join('')}</div>`).join('')}
-    <p class="tiny muted fs-foot">OpenActuary · free Exam P prep · formula sheet</p>
+    <p class="tiny muted fs-foot">OpenActuary · free exam prep · ${esc(EX.name)} formula sheet</p>
   </div>`;
   el.addEventListener('click', e => {
     if (e.target.closest('[data-print]')) { window.print(); return; }

@@ -1,4 +1,4 @@
-// Exam P · General Probability practice quiz (#/practice/quiz).
+// Practice quiz (#/practice/quiz[/<exam or topic>]) for any exam in data/exams.js.
 // Modes: 10 random questions, all 20, or review missed. Optional timer at the Exam P pace (6 min/question).
 // One question at a time, then a results screen with a ring, per-topic breakdown and worked solutions.
 // Saves to the "quiz" namespace: { history: [{ at, score, total, secs, byTopic }], missed: { qid: true }, best }.
@@ -8,7 +8,9 @@ import { load, update as updateStore, setLast } from '../progress.js';
 import { renderMath } from '../ui/katex.js';
 import { ring, animateRings } from '../ui/charts.js';
 import { confetti, countUp } from '../ui/motion.js';
-import { loadExam, subtopicLabels } from '../../data/exams.js';
+import { loadExam, subtopicLabels, resolveScope, liveExams, exam as examOf } from '../../data/exams.js';
+// Real exam length (questions) for the mixed 'exam-length' quiz.
+const EXAM_LEN = { p: 30, fm: 35 };
 
 export const title = 'Practice quiz';
 
@@ -19,24 +21,28 @@ const FALLBACK = { history: [], missed: {}, best: 0 };
 let root = null, timer = null;
 let run = null;                           // { mode, qs, ans, i, t0, timed }
 let opts = { timed: true };
-// Scope: one Exam P topic, or 'all' (a mixed quiz across every topic, like the real exam).
-let ALL = [], QUESTIONS = [], TOPICS = {}, scope = 'all';
+// Scope: one topic, or 'all' (a mixed quiz across every topic of the current exam, like the real exam).
+let ALL = [], QUESTIONS = [], TOPICS = {}, scope = 'all', EXAM = 'p';
+const exName = () => examOf(EXAM).name;
+const quizPath = () => '#/practice/quiz' + (scope === 'all' ? (EXAM === 'p' ? '' : '/' + EXAM) : '/' + scope);
 function setScope(id) {
   scope = ALL.some(t => t.id === id) ? id : 'all';
   QUESTIONS = scope === 'all' ? ALL.flatMap(t => t.questions) : ALL.find(t => t.id === scope).questions;
   const t = ALL.find(x => x.id === scope);
   const lede = root.querySelector('[data-lede]');
-  if (lede) lede.textContent = `Original exam-style questions on ${t ? t.title : 'all of Exam P'}, five choices each, with a full worked solution for every one.`;
-  try { history.replaceState(null, '', '#/practice/quiz' + (scope === 'all' ? '' : '/' + scope)); } catch (e) { }
-  setLast('#/practice/quiz' + (scope === 'all' ? '' : '/' + scope), 'Practice quiz' + (t ? ': ' + t.short : ''));
+  if (lede) lede.textContent = `Original exam-style questions on ${t ? t.title : 'all of ' + exName()}, five choices each, with a full worked solution for every one.`;
+  const eb = root.querySelector('[data-eyebrow]'); if (eb) eb.textContent = exName() + ' · Practice';
+  try { history.replaceState(null, '', quizPath()); } catch (e) { }
+  setLast(quizPath(), 'Practice quiz: ' + (t ? t.short : exName()));
 }
 
 export async function render(el, params) {
   root = el; run = null;
-  ALL = await loadExam('p'); TOPICS = subtopicLabels(ALL);
+  const sc = resolveScope(params && params[0]); EXAM = sc.examId;
+  ALL = await loadExam(EXAM); TOPICS = subtopicLabels(ALL);
   el.innerHTML = `<div class="container qz-page">
     <header class="page-head">
-      <div class="eyebrow">Exam P · Practice</div>
+      <div class="eyebrow" data-eyebrow>Practice</div>
       <h1>Practice quiz</h1>
       <p class="lede" data-lede></p>
     </header>
@@ -44,7 +50,7 @@ export async function render(el, params) {
   </div>`;
   el.addEventListener('click', onClick);
   el.addEventListener('change', onChange);
-  setScope(params && params[0]);
+  setScope(sc.topicId || 'all');
   drawStart();
 }
 export function destroy() { stopTimer(); root = null; run = null; }
@@ -60,10 +66,11 @@ function drawStart() {
   const last = s.history[s.history.length - 1];
   const body = root.querySelector('[data-body]');
   const scopeBar = `<div class="qz-scope" role="group" aria-label="Quiz topic">
-      <button type="button" class="chip" data-scope="all" aria-pressed="${scope === 'all'}">All of Exam P · ${ALL.reduce((n, t) => n + t.questions.length, 0)}</button>
+      ${liveExams().length > 1 ? `<span class="seg qz-exam" role="group" aria-label="Exam">${liveExams().map(e => `<button type="button" data-exam="${e.id}" aria-pressed="${e.id === EXAM}">${esc(e.name)}</button>`).join('')}</span>` : ''}
+      <button type="button" class="chip" data-scope="all" aria-pressed="${scope === 'all'}">All of ${esc(exName())} · ${ALL.reduce((n, t) => n + t.questions.length, 0)}</button>
       ${ALL.map(t => `<button type="button" class="chip" data-scope="${t.id}" aria-pressed="${scope === t.id}">${esc(t.short)} · ${t.questions.length}</button>`).join('')}
     </div>`;
-  const full = scope === 'all' ? Math.min(30, QUESTIONS.length) : QUESTIONS.length;
+  const full = scope === 'all' ? Math.min(EXAM_LEN[EXAM] || 30, QUESTIONS.length) : QUESTIONS.length;
   body.innerHTML = `${scopeBar}
     <div class="qz-start">
       <div class="qz-modes">
@@ -72,14 +79,14 @@ function drawStart() {
           <b>Quick quiz</b><span class="small muted">10 random questions · about 60 minutes at exam pace</span></button>
         <button type="button" class="card lift qz-mode" data-start="full">
           <span class="qz-mode-ic" aria-hidden="true">${icon('layers')}</span>
-          <b>${scope === 'all' ? 'Exam-length quiz' : 'Full set'}</b><span class="small muted">${scope === 'all' ? `${full} questions across every topic, like the real 3-hour exam` : `All ${full} questions in random order`}</span></button>
+          <b>${scope === 'all' ? 'Exam-length quiz' : 'Full set'}</b><span class="small muted">${scope === 'all' ? `${full} questions across every topic, like the real exam` : `All ${full} questions in random order`}</span></button>
         <button type="button" class="card lift qz-mode" data-start="missed" ${nMissed ? '' : 'disabled aria-disabled="true"'}>
           <span class="qz-mode-ic" aria-hidden="true">${icon('refresh')}</span>
           <b>Review my missed questions</b><span class="small muted">${nMissed ? `${nMissed} question${nMissed === 1 ? '' : 's'} to review` : 'Nothing to review yet'}</span></button>
       </div>
       <div class="qz-side">
         <label class="qz-toggle card flat"><input type="checkbox" data-timed ${opts.timed ? 'checked' : ''}>
-          <span><b>Show a timer</b><span class="small muted">Exam P gives you about 6 minutes per question. We'll show elapsed time and your pace. Nothing is cut off.</span></span></label>
+          <span><b>Show a timer</b><span class="small muted">${esc(exName())} gives you about 6 minutes per question. We'll show elapsed time and your pace. Nothing is cut off.</span></span></label>
         <div class="kpis qz-kpis">
           <div class="kpi"><div class="l">Best score</div><div class="v">${s.history.length ? s.best + '%' : '—'}</div></div>
           <div class="kpi"><div class="l">Quizzes taken</div><div class="v">${s.history.length}</div></div>
@@ -95,7 +102,7 @@ function start(mode) {
   let qs = mode === 'missed' ? QUESTIONS.filter(q => s.missed[q.id]) : QUESTIONS.slice();
   shuffle(qs);
   if (mode === 'quick') qs = qs.slice(0, 10);
-  if (mode === 'full' && scope === 'all') qs = qs.slice(0, 30);
+  if (mode === 'full' && scope === 'all') qs = qs.slice(0, EXAM_LEN[EXAM] || 30);
   if (!qs.length) return;
   run = { mode, qs, ans: qs.map(() => null), i: 0, t0: Date.now(), timed: opts.timed };
   drawQuestion(true);
@@ -162,6 +169,7 @@ function onChange(e) {
 }
 
 function onClick(e) {
+  const ex = e.target.closest('[data-exam]'); if (ex) { switchExam(ex.dataset.exam); return; }
   const sc = e.target.closest('[data-scope]'); if (sc) { setScope(sc.dataset.scope); drawStart(); return; }
   const st = e.target.closest('[data-start]'); if (st && !st.disabled) { start(st.dataset.start); return; }
   const go = e.target.closest('[data-go]'); if (go && run) { run.i = +go.dataset.go; drawQuestion(false); return; }
@@ -249,4 +257,10 @@ function drawResults(prevBest) {
   animateRings(body);
   countUp(body);
   const h = body.querySelector('#qz-res-h'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: false });
+}
+
+async function switchExam(id) {
+  if (id === EXAM || !examOf(id)) return;
+  EXAM = id; ALL = await loadExam(EXAM); TOPICS = subtopicLabels(ALL);
+  setScope('all'); drawStart();
 }

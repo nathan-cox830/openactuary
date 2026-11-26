@@ -7,9 +7,10 @@ import PROBABILITY from '../../data/exam-p/glossary.js';
 const entries = {};            // term -> { def, topic }
 Object.entries(INSURANCE).forEach(([k, d]) => { entries[k] = { def: d, topic: 'Insurance' }; });
 Object.entries(PROBABILITY).forEach(([k, d]) => { entries[k] = { def: d, topic: 'Probability' }; });
-// Further Exam P topics (loaded here so one missing file never breaks the site).
-const MORE = await Promise.allSettled([import('../../data/exam-p/univariate/glossary.js'), import('../../data/exam-p/multivariate/glossary.js')]);
-MORE.forEach(r => { if (r.status === 'fulfilled') Object.entries(r.value.default || {}).forEach(([k, d]) => { if (!Object.keys(entries).some(x => x.toLowerCase() === k.toLowerCase())) entries[k] = { def: d, topic: 'Probability' }; }); });
+// Further Exam P and Exam FM topics (loaded here so one missing file never breaks the site).
+const MORE = await Promise.allSettled([import('../../data/exam-p/univariate/glossary.js'), import('../../data/exam-p/multivariate/glossary.js'),
+  import('../../data/exam-fm/tvm/glossary.js'), import('../../data/exam-fm/annuities/glossary.js'), import('../../data/exam-fm/bonds/glossary.js'), import('../../data/exam-fm/immunization/glossary.js')]);
+MORE.forEach((r, i) => { if (r.status === 'fulfilled') Object.entries(r.value.default || {}).forEach(([k, d]) => { if (!Object.keys(entries).some(x => x.toLowerCase() === k.toLowerCase())) entries[k] = { def: d, topic: i < 2 ? 'Probability' : 'Financial math' }; }); });
 
 export const GLOSSARY = entries;
 export const terms = () => Object.keys(entries).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));

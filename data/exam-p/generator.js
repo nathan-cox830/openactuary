@@ -289,10 +289,12 @@ export const LEVELS = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
 function shuffle(r, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 /** Five choices: the answer plus four distinct wrong values (common mistakes first, then nearby fillers). */
-export function buildChoices(r, answer, wrongs, kind) {
+export function buildChoices(r, answer, wrongs, kind, dp) {
   // 'int': whole numbers; 'prob': probabilities to 4 dp; 'num': any other decimal (means, variances, payments)
   const fmtNum = v => Math.abs(v) >= 1000 ? v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : String(+v.toPrecision(Math.abs(v) >= 1 ? 6 : 4));
-  const fmt = kind === 'int' ? (v => Math.round(v).toLocaleString('en-US')) : kind === 'num' ? fmtNum : (v => v.toFixed(4));
+  // dp (optional, 'num' only): fixed decimal places, e.g. 2 for money or 3 for durations
+  const fmtDp = v => v.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  const fmt = kind === 'int' ? (v => Math.round(v).toLocaleString('en-US')) : kind === 'num' ? (dp != null ? fmtDp : fmtNum) : (v => v.toFixed(4));
   // wrong values must be valid answers too: whole numbers ≥ 1, probabilities that display strictly between 0 and 1,
   // or (for 'num') finite values with the same sign as the answer
   const ok = v => isFinite(v) && (kind === 'int' ? v >= 1 && Math.abs(v - Math.round(v)) < 1e-9
@@ -316,7 +318,7 @@ export function makeProblem(tid, level, seed) {
   const tpl = TEMPLATES.find(x => x.id === tid) || TEMPLATES[0];
   const r = mulberry(seed);
   const g = tpl.gen(r, level);
-  const choices = buildChoices(r, g.answer, g.wrongs, g.kind);
+  const choices = buildChoices(r, g.answer, g.wrongs, g.kind, g.dp ?? tpl.dp);
   return { tid: tpl.id, topic: tpl.topic, name: tpl.name, level, seed, q: g.q, steps: g.steps, kind: g.kind, params: g.params,
     answer: g.answer, choices, correctIndex: choices.findIndex(c => c.correct) };
 }

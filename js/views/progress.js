@@ -11,7 +11,7 @@ import * as store from '../progress.js';
 export const title = 'My progress';
 
 // Exam P topics and quiz subtopic labels come from the registry (data/exams.js).
-import { loadExam, subtopicLabels } from '../../data/exams.js';
+import { loadExam, subtopicLabels, liveExams } from '../../data/exams.js';
 import { loadAllTracks } from '../../data/skills/tracks.js';
 
 export async function render(el) {
@@ -23,7 +23,8 @@ export async function render(el) {
   const skills = store.load('skills', { done: {} });
   const tracks = (await loadAllTracks()).filter(Boolean);
   const skillRows = tracks.map(t => { const steps = t.lessons.flatMap(l => l.steps); return { t, n: steps.length, d: steps.filter(s => (skills.done || {})[s.id]).length }; });
-  const PT = await loadExam('p'); const TOPICS = subtopicLabels(PT);
+  const EXS = liveExams(); const byExam = await Promise.all(EXS.map(e => loadExam(e.id)));
+  const PT = byExam.flat(); const TOPICS = subtopicLabels(PT);
   const done = learn.done || {};
   const perTopic = PT.map(t => ({ t, n: t.steps.length, d: t.steps.filter(s => done[s.id]).length }));
   const total = perTopic.reduce((a, x) => a + x.n, 0);
@@ -52,8 +53,8 @@ export async function render(el) {
 
     <div class="dash-grid">
       <section class="card dash-card" data-reveal>
-        <div class="row between"><h3>${icon('book')} Exam P lessons</h3><a class="btn sm quiet" href="#/learn">Open ${icon('arrow')}</a></div>
-        <div class="dash-topics">${perTopic.map(({ t, n, d }) => `<a class="dash-topic" href="#/learn/p/${t.id}">${ring(n ? d / n : 0, { size: 64, label: `${d}/${n}`, done: n && d >= n })}<span><b>${esc(t.short)}</b><span class="tiny muted">${d >= n ? 'Complete' : d ? 'In progress' : 'Not started'}</span></span></a>`).join('')}</div>
+        <div class="row between"><h3>${icon('book')} Exam lessons</h3><a class="btn sm quiet" href="#/learn">Open ${icon('arrow')}</a></div>
+        <div class="dash-topics">${perTopic.map(({ t, n, d }) => `<a class="dash-topic" href="#/learn/${t.examId}/${t.id}">${ring(n ? d / n : 0, { size: 64, label: `${d}/${n}`, done: n && d >= n })}<span><b>${esc(t.short)}</b><span class="tiny muted">${d >= n ? 'Complete' : d ? 'In progress' : 'Not started'}</span></span></a>`).join('')}</div>
         <div class="flash-row"><span class="small"><b>${known}</b> of ${nTerms} glossary terms marked known</span><div class="bar"><i style="width:${nTerms ? Math.round(100 * known / nTerms) : 0}%"></i></div><a class="small" href="#/learn/glossary">Flashcards →</a></div>
       </section>
 

@@ -7,7 +7,7 @@ import { GLOSSARY, terms } from '../ui/glossary.js';
 
 export const title = 'Glossary & flashcards';
 
-const FILTERS = [['all', 'All'], ['Probability', 'Probability'], ['Insurance', 'Insurance']];
+const FILTERS = [['all', 'All'], ['Probability', 'Probability'], ['Financial math', 'Financial math'], ['Insurance', 'Insurance']];
 let root = null;
 const st = { filter: 'all', query: '', mode: 'list', includeKnown: false, deck: [], pos: 0, flipped: false };
 const known = () => load('flash', { known: {} }).known || {};

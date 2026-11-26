@@ -7,7 +7,7 @@ import { load, update as updateStore, setLast } from '../progress.js';
 import { renderMath } from '../ui/katex.js';
 import { applyGlossary } from '../ui/glossary.js';
 import { LEVELS } from '../../data/exam-p/generator.js';
-import { loadExam, subtopicLabels, makeProblemFrom } from '../../data/exams.js';
+import { loadExam, subtopicLabels, makeProblemFrom, resolveScope, liveExams, exam as examOf } from '../../data/exams.js';
 
 export const title = 'Problem generator';
 
@@ -15,7 +15,7 @@ const LET = ['A', 'B', 'C', 'D', 'E'];
 const FALLBACK = { attempts: 0, correct: 0, streak: 0, bestStreak: 0, byTemplate: {} };
 let root = null;
 // area: one Exam P topic (e.g. 'univariate'); ui.topics: the subtopics switched on within it.
-let ALL = [], ALLT = [], TEMPLATES = [], TOPICS = {}, area = null;
+let ALL = [], ALLT = [], TEMPLATES = [], TOPICS = {}, area = null, EXAM = 'p';
 const ui = { topics: new Set(), diff: 'mixed' };
 const makeProblem = (tid, level, seed) => makeProblemFrom(ALLT, tid, level, seed);
 function setArea(id) {
@@ -24,6 +24,7 @@ function setArea(id) {
   try { history.replaceState(null, '', '#/practice/' + area); } catch (e) { }
   setLast('#/practice/' + area, 'Problem generator: ' + t.short);
 }
+function areaChips() { return ALL.map(t => `<button type="button" class="chip" data-area="${t.id}" aria-pressed="${t.id === area}">${esc(t.short)}</button>`).join(''); }
 function topicChips() {
   return [...new Set(TEMPLATES.map(x => x.topic))].map(k => `<button type="button" class="chip" data-topic="${k}" aria-pressed="${ui.topics.has(k)}">${esc(TOPICS[k] || k)}</button>`).join('');
 }
@@ -33,22 +34,22 @@ const stats = () => { const s = load('practice', FALLBACK); s.byTemplate = s.byT
 
 export async function render(el, params) {
   root = el;
-  ALL = await loadExam('p'); ALLT = ALL.flatMap(t => t.templates); TOPICS = subtopicLabels(ALL);
-  setArea(params && params[0]);
+  const sc = resolveScope(params && params[0]); EXAM = sc.examId;
+  ALL = await loadExam(EXAM); ALLT = ALL.flatMap(t => t.templates); TOPICS = subtopicLabels(ALL);
+  setArea(sc.topicId);
   el.innerHTML = `
   <div class="container gen-page">
     <header class="page-head">
-      <div class="eyebrow">Exam P · Practice</div>
+      <div class="eyebrow" data-eyebrow>${esc(examOf(EXAM).name)} · Practice</div>
       <h1>Problem generator</h1>
-      <p class="lede">Fresh Exam P problems every time, each with a step-by-step solution using the actual numbers. Pick a topic and difficulty, then keep your streak going.</p>
+      <p class="lede">Fresh exam problems every time, each with a step-by-step solution using the actual numbers. Pick a topic and difficulty, then keep your streak going.</p>
     </header>
     <div class="gen-layout">
       <aside class="gen-side">
         <section class="card gen-ctrl" aria-labelledby="gen-t-h">
-          <h3 id="gen-t-h" class="gen-h">Exam P topic</h3>
-          <div class="chips gen-area" role="group" aria-label="Exam P topic">
-            ${ALL.map(t => `<button type="button" class="chip" data-area="${t.id}" aria-pressed="${t.id === area}">${esc(t.short)}</button>`).join('')}
-          </div>
+          ${liveExams().length > 1 ? `<div class="seg gen-exam" role="group" aria-label="Exam">${liveExams().map(e => `<button type="button" data-exam="${e.id}" aria-pressed="${e.id === EXAM}">${esc(e.name)}</button>`).join('')}</div>` : ''}
+          <h3 id="gen-t-h" class="gen-h">Topic</h3>
+          <div class="chips gen-area" role="group" aria-label="Topic" data-areas>${areaChips()}</div>
           <h3 class="gen-h">Problem types</h3>
           <div class="chips gen-topics" role="group" aria-label="Problem types" data-topics>${topicChips()}</div>
           <h3 class="gen-h">Difficulty</h3>
@@ -149,6 +150,19 @@ function onChange(e) {
   if (e.target.name === 'gen' && !answered) { const b = root.querySelector('[data-act="check"]'); if (b) b.disabled = false; }
 }
 function onClick(e) {
+  const ex = e.target.closest('[data-exam]');
+  if (ex) {
+    if (ex.dataset.exam === EXAM) return;
+    EXAM = ex.dataset.exam;
+    loadExam(EXAM).then(all => {
+      ALL = all; ALLT = ALL.flatMap(t => t.templates); TOPICS = subtopicLabels(ALL); setArea(null);
+      root.querySelectorAll('[data-exam]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.exam === EXAM)));
+      root.querySelector('[data-eyebrow]').textContent = examOf(EXAM).name + ' · Practice';
+      root.querySelector('[data-areas]').innerHTML = areaChips(); root.querySelector('[data-topics]').innerHTML = topicChips();
+      drawStats(); next();
+    });
+    return;
+  }
   const ar = e.target.closest('[data-area]');
   if (ar) {
     setArea(ar.dataset.area);

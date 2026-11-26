@@ -18,6 +18,7 @@ export async function render(el, params) {
   }
   const st = load('learn', { done: {}, cur: {} }); const done = st.done || {}; const curMap = st.cur || {};
   const loaded = { p: pTopics };
+  for (const ex of EXAMS) if (ex.id !== 'p' && ex.topics.length) loaded[ex.id] = await loadExam(ex.id);
   el.innerHTML = `
   <div class="container">
     <header class="page-head">
@@ -26,7 +27,7 @@ export async function render(el, params) {
       <p class="lede">Short interactive lessons, a formula sheet and flashcards, then exam-style quizzes and a problem generator for every topic.</p>
     </header>
     <div class="hub-tools" data-reveal>
-      ${[['sigma', 'Formula sheet', 'Every formula, grouped by topic', '#/learn/formulas'], ['book', 'Glossary & flashcards', 'Definitions and spaced review', '#/learn/glossary'], ['quiz', 'Practice quizzes', 'Exam-style, with worked solutions', '#/practice/quiz'], ['dice', 'Problem generator', 'A fresh problem every time', '#/practice']]
+      ${[['sigma', 'Formula sheets', 'Exam P and FM, grouped by topic', '#/learn/formulas'], ['book', 'Glossary & flashcards', 'Definitions and spaced review', '#/learn/glossary'], ['quiz', 'Practice quizzes', 'Exam-style, with worked solutions', '#/practice/quiz'], ['dice', 'Problem generator', 'A fresh problem every time', '#/practice']]
         .map(([ic, t, d, h]) => `<a class="hub-tool card lift" href="${h}"><span class="path-ic">${icon(ic)}</span><span><b>${t}</b><span class="small muted">${d}</span></span></a>`).join('')}
     </div>
     ${EXAMS.map(ex => {

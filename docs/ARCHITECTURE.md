@@ -54,6 +54,8 @@ data/exam-p/glossary.js    probability terms { term: definition }
 data/exams.js              exam/topic registry: EXAMS, loadTopic, loadExam, subtopicLabels, makeProblemFrom
 data/exam-p/*.js           Exam P · General Probability lesson, quiz, generator, formulas (also buildChoices)
 data/exam-p/<topic>/*.js   Exam P · univariate/ and multivariate/ topics (same five files each)
+data/exam-fm/<topic>/*.js  Exam FM · tvm/, annuities/, bonds/, immunization/ (same five files each)
+js/ui/fm-widgets.js        FM lesson widgets: timelineWidget, amortWidget, priceYieldWidget, immunizeWidget
 js/ui/prob-widgets.js      lesson widgets: distWidget, coverageWidget, jointWidget, cltWidget (+ gammaP)
 data/careers/*.js          job links, interview questions
 ```
@@ -64,10 +66,10 @@ data/careers/*.js          job links, interview questions
 | `#/` | views/home.js | |
 | `#/learn` | views/learn-hub.js | every exam and topic with progress. Old `#/learn/<step>` links redirect to the topic lesson |
 | `#/learn/<exam>/<topic>[/<step>]` | views/learn.js | topic lesson, e.g. `#/learn/p/univariate/uv-exponential` |
-| `#/learn/formulas` | views/formulas.js | KaTeX formula sheet, all Exam P topics |
+| `#/learn/formulas[/<exam>]` | views/formulas.js | KaTeX formula sheet for one exam (`p` default, `fm`) |
 | `#/learn/glossary` | views/glossary.js | searchable glossary + flashcards |
-| `#/practice[/<topic>]` | views/practice.js | problem generator for one topic |
-| `#/practice/quiz[/<topic>]` | views/quiz.js | topic quiz, or a mixed exam-length quiz across all topics |
+| `#/practice[/<exam or topic>]` | views/practice.js | problem generator for one topic, with an exam switch |
+| `#/practice/quiz[/<exam or topic>]` | views/quiz.js | topic quiz, or a mixed exam-length quiz across an exam (P 30, FM 35 questions) |
 | `#/cases`, `#/cases/<id>/<tab>` | views/cases.js, views/case.js | case library / workspace |
 | `#/skills` | views/skills.js | Excel and SQL tracks with progress |
 | `#/skills/<track>/<lesson>[/<step>]` | views/skill-lesson.js | one step with a live spreadsheet or SQL editor, checked automatically |
@@ -105,14 +107,20 @@ Attach event listeners to `el` (not `document`) so they disappear with the view.
 ## Exams and topics
 `data/exams.js` lists each exam and its topics. A topic folder has five modules: `lesson.js` (`LESSON`, `STEPS`), `quiz.js` (`QUESTIONS`, `TOPICS` = subtopic labels), `generator.js` (`TEMPLATES`), `formulas.js` (`FORMULA_GROUPS`) and `glossary.js` (default `{ term: definition }`, merged in `js/ui/glossary.js`). Views load topics with `loadTopic(exam, topic)` / `loadExam(exam)`; a missing or broken topic is skipped rather than breaking the page. Ids for lesson steps, quiz questions and templates must be unique across the site (prefix them: `uv-`, `mv-`).
 
-Generator templates return `{ q, answer, wrongs, kind, steps, params }` where `kind` is `prob` (4-dp probability), `int` (whole number) or `num` (any other decimal: means, variances, payments). `buildChoices` in `data/exam-p/generator.js` turns that into five choices.
+Generator templates return `{ q, answer, wrongs, kind, steps, params }` where `kind` is `prob` (4-dp probability), `int` (whole number) or `num` (any other decimal: means, variances, payments). A template (or a single result) may set `dp` to show `num` choices with fixed decimal places, e.g. `dp: 2` for money or `dp: 3` for durations. `buildChoices` in `data/exam-p/generator.js` turns that into five choices.
 
-Lesson steps can set `widget` to `venn`, `bayes` (in views/learn.js), `dist`, `coverage`, `joint` or `clt` (js/ui/prob-widgets.js).
+Lesson steps can set `widget` to `venn`, `bayes` (in views/learn.js), `dist`, `coverage`, `joint`, `clt` (js/ui/prob-widgets.js), `timeline`, `amort`, `priceyield` or `immunize` (js/ui/fm-widgets.js).
+
+Topic ids are unique across exams (FM topics are prefixed `fm-`), so a route parameter can be an exam id or a topic id; `resolveScope()` in data/exams.js tells them apart.
 
 Quiz subtopic keys (use these exact ids):
 - General Probability: `sets`, `counting`, `conditional`, `independence`, `bayes`
 - Univariate: `rv`, `moments`, `discrete`, `continuous`, `coverage`
 - Multivariate: `joint`, `condexp`, `covariance`, `sums`, `orderclt`
+- FM interest & TVM (`fm-tvm`, ids `fm-tv-`): `interest`, `force`, `equiv`, `realrates`
+- FM annuities & loans (`fm-annuities`, ids `fm-an-`): `annuity`, `varying`, `loan`, `sinking`
+- FM bonds & cash flows (`fm-bonds`, ids `fm-bd-`): `bond`, `bookvalue`, `cashflow`, `termstruct`
+- FM duration & swaps (`fm-immunization`, ids `fm-im-`): `duration`, `immunize`, `swap`
 
 Test generator templates without a browser: `/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc -m test.mjs` runs ES modules on macOS (use `print()`).
 

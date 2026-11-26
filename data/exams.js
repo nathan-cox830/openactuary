@@ -24,14 +24,36 @@ export const EXAMS = [
     ],
   },
   {
-    id: 'fm', name: 'Exam FM', title: 'Financial Mathematics', status: 'soon',
-    blurb: 'Interest theory, annuities, loans, bonds, cash-flow analysis, duration and immunization. Coming soon.',
-    topics: [],
+    id: 'fm', name: 'Exam FM', title: 'Financial Mathematics', status: 'live',
+    blurb: 'The second exam: interest theory, annuities and loans, bonds, cash-flow analysis, duration, immunization and swaps. Four topics, each with a lesson, quiz questions and a problem generator.',
+    topics: [
+      { id: 'fm-tvm', title: 'Interest and the Time Value of Money', short: 'Interest & TVM', weight: '10–15%', icon: 'clock',
+        blurb: 'Effective, nominal and continuous rates, discounting, equations of value, inflation and what drives interest rates.',
+        load: () => Promise.all([import('./exam-fm/tvm/lesson.js'), import('./exam-fm/tvm/quiz.js'), import('./exam-fm/tvm/generator.js'), import('./exam-fm/tvm/formulas.js')]) },
+      { id: 'fm-annuities', title: 'Annuities and Loans', short: 'Annuities & loans', weight: '25–40%', icon: 'layers',
+        blurb: 'Level and varying annuities, perpetuities, loan amortization, outstanding balances, refinancing and sinking funds.',
+        load: () => Promise.all([import('./exam-fm/annuities/lesson.js'), import('./exam-fm/annuities/quiz.js'), import('./exam-fm/annuities/generator.js'), import('./exam-fm/annuities/formulas.js')]) },
+      { id: 'fm-bonds', title: 'Bonds and Cash-Flow Analysis', short: 'Bonds & cash flows', weight: '25–40%', icon: 'chart',
+        blurb: 'Bond prices and yields, book values, NPV and IRR, fund returns, spot and forward rates and the yield curve.',
+        load: () => Promise.all([import('./exam-fm/bonds/lesson.js'), import('./exam-fm/bonds/quiz.js'), import('./exam-fm/bonds/generator.js'), import('./exam-fm/bonds/formulas.js')]) },
+      { id: 'fm-immunization', title: 'Duration, Immunization and Swaps', short: 'Duration & swaps', weight: '10–30%', icon: 'shield',
+        blurb: 'Macaulay and modified duration, convexity, Redington and full immunization, cash-flow matching and interest rate swaps.',
+        load: () => Promise.all([import('./exam-fm/immunization/lesson.js'), import('./exam-fm/immunization/quiz.js'), import('./exam-fm/immunization/generator.js'), import('./exam-fm/immunization/formulas.js')]) },
+    ],
   },
 ];
 
 export const exam = id => EXAMS.find(e => e.id === id);
 export const topicMeta = (examId, topicId) => exam(examId)?.topics.find(t => t.id === topicId);
+/** The exam a topic id belongs to (topic ids are unique across exams), or null. */
+export const examOfTopic = topicId => EXAMS.find(e => e.topics.some(t => t.id === topicId)) || null;
+/** Resolve a route parameter that may be an exam id ('p', 'fm') or a topic id. */
+export function resolveScope(param, fallbackExam = 'p') {
+  if (param && exam(param)) return { examId: param, topicId: null };
+  const ex = param && examOfTopic(param);
+  return ex ? { examId: ex.id, topicId: param } : { examId: fallbackExam, topicId: null };
+}
+export const liveExams = () => EXAMS.filter(e => e.status === 'live' && e.topics.length);
 
 const cache = {};
 /** Load one topic's content. Resolves to null if its files are missing or broken. */
@@ -60,7 +82,7 @@ export function makeProblemFrom(templates, tid, level, seed) {
   const tpl = templates.find(x => x.id === tid) || templates[0];
   const r = mulberry(seed);
   const g = tpl.gen(r, level);
-  const choices = buildChoices(r, g.answer, g.wrongs, g.kind);
+  const choices = buildChoices(r, g.answer, g.wrongs, g.kind, g.dp ?? tpl.dp);
   return { tid: tpl.id, topic: tpl.topic, name: tpl.name, level, seed, q: g.q, steps: g.steps, kind: g.kind, params: g.params,
     answer: g.answer, choices, correctIndex: choices.findIndex(c => c.correct) };
 }

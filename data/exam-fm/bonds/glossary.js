@@ -1,0 +1,26 @@
+// Bond and cash-flow terms for Exam FM (Bonds and Cash-Flow Analysis). Format: { term: definition }.
+// These merge with the other glossaries and are underlined in lesson and case text.
+export default {
+  'bond': 'A loan sold as a security: the issuer receives the price now and promises coupons and a redemption payment on a fixed schedule.',
+  'face value': 'The amount printed on a bond (also called par value). Coupons are computed as the face value times the coupon rate.',
+  'redemption value': 'The amount the issuer pays when the bond matures or is called. Often equal to the face value, but it can differ.',
+  'coupon rate': 'The rate, per coupon period, that sets each coupon as a fraction of face value.',
+  'modified coupon rate': 'g = Fr/C, the coupon expressed as a fraction of the redemption value rather than the face value.',
+  'yield to maturity': 'The single interest rate at which the present value of a bond\'s remaining payments equals its price, assuming it is held to maturity.',
+  'premium bond': 'A bond priced above its redemption value because its modified coupon rate exceeds the yield.',
+  'discount bond': 'A bond priced below its redemption value because its modified coupon rate is less than the yield.',
+  'book value': 'The value of a bond on the investor\'s books at the original yield: the present value of the remaining payments. It moves from the price to the redemption value.',
+  'flat price': 'The amount actually paid for a bond between coupon dates (also called the dirty price), including the accrued coupon.',
+  'market price': 'The quoted (clean) price of a bond between coupon dates: the flat price minus the accrued coupon.',
+  'accrued coupon': 'The part of the next coupon earned by the seller so far, usually the coupon times the fraction of the period that has passed.',
+  'callable bond': 'A bond the issuer may redeem early on set dates. Investors price it to the redemption date that gives the lowest price.',
+  'net present value': 'The present value of all of a project\'s cash flows, with outflows negative, at a chosen interest rate.',
+  'internal rate of return': 'The interest rate at which a set of cash flows has net present value zero. Cash flows that change sign more than once can have several.',
+  'dollar-weighted return': 'A fund\'s internal rate of return over a period, accounting for the size and timing of deposits and withdrawals.',
+  'time-weighted return': 'A fund return found by chaining the growth factors between cash flows, so it does not depend on the size or timing of deposits.',
+  'spot rate': 'The annual yield on a zero-coupon bond maturing at a given time; it discounts a single payment at that date.',
+  'forward rate': 'An interest rate agreed today for a loan that starts at a future date, implied by spot rates with no arbitrage.',
+  'yield curve': 'A graph of spot rates (or yields) against term to maturity. It can be upward sloping, inverted, flat or humped.',
+  'par yield': 'The coupon rate at which a bond of a given term sells for exactly its face value, given the current spot rates.',
+  'zero-coupon bond': 'A bond with no coupons that pays a single amount at maturity; its yield is the spot rate for that date.',
+};

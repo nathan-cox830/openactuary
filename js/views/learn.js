@@ -11,6 +11,7 @@ import { ring, animateRings } from '../ui/charts.js';
 import { confetti } from '../ui/motion.js';
 import { loadTopic, exam as examOf } from '../../data/exams.js';
 import { distWidget, coverageWidget, jointWidget, cltWidget } from '../ui/prob-widgets.js';
+import { timelineWidget, amortWidget, priceYieldWidget, immunizeWidget } from '../ui/fm-widgets.js';
 import { go } from '../router.js';
 
 export let title = 'Lesson';
@@ -125,7 +126,7 @@ function renderMain() {
       ${next ? `<a class="btn ghost" href="${stepHref(next.id)}"><span>Next</span> ${icon('arrow')}</a>` : `<a class="btn ghost" href="#/practice/quiz/${TOPIC.id}"><span>Take the quiz</span> ${icon('arrow')}</a>`}
     </nav>`;
   const w = main.querySelector('[data-widget]');
-  const WIDGETS = { venn: vennWidget, bayes: bayesWidget, dist: distWidget, coverage: coverageWidget, joint: jointWidget, clt: cltWidget };
+  const WIDGETS = { venn: vennWidget, bayes: bayesWidget, dist: distWidget, coverage: coverageWidget, joint: jointWidget, clt: cltWidget, timeline: timelineWidget, amort: amortWidget, priceyield: priceYieldWidget, immunize: immunizeWidget };
   if (w && WIDGETS[w.dataset.widget]) WIDGETS[w.dataset.widget](w);
   renderMath(main);
   applyGlossary(main);

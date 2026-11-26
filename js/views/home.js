@@ -17,9 +17,9 @@ export function render(el) {
       <div class="hero-copy">
         <div class="eyebrow on-dark">Free actuarial exam prep &amp; case studies</div>
         <h1>Think like an actuary.<br><span class="grad">Free, forever.</span></h1>
-        <p class="hero-lede">Learn all of Exam P, practice with endless fresh problems, and solve interactive insurance cases built on real data. No account, no fees, no ads.</p>
+        <p class="hero-lede">Learn Exam P and Exam FM, practice with endless fresh problems, and solve interactive insurance cases built on real data. No account, no fees, no ads.</p>
         <div class="row hero-ctas">
-          <a class="btn primary lg" href="#/learn">Start Exam P ${icon('arrow')}</a>
+          <a class="btn primary lg" href="#/learn">Start learning ${icon('arrow')}</a>
           <a class="btn lg on-dark-ghost" href="#/cases">Explore the cases</a>
         </div>
         ${last && last.route ? `<a class="continue" href="#/${esc(String(last.route).replace(/^#?\/?/, ''))}"><span class="continue-ic">${icon('play')}</span><span><span class="tiny">Continue where you left off</span><b>${esc(last.label || 'Your last page')}</b></span>${icon('arrow')}</a>` : ''}
@@ -38,7 +38,7 @@ export function render(el) {
     <h2 class="section-title" data-reveal>Five ways in</h2>
     <div class="path-grid">
       ${[
-        ['book', 'Learn', 'All of Exam P', 'Step-by-step lessons on all three Exam P topics, with interactive Venn diagrams, distribution explorers and simulators, plus a formula sheet and flashcards.', '#/learn', 'Start learning'],
+        ['book', 'Learn', 'Exams P and FM', 'Step-by-step lessons on every Exam P and Exam FM topic, with interactive explorers for distributions, cash flows, loans, bonds and immunization, plus formula sheets and flashcards.', '#/learn', 'Start learning'],
         ['dice', 'Practice', 'Quiz and problem generator', 'Exam-style multiple choice with worked solutions, and a generator that writes a new problem every time.', '#/practice', 'Practice now'],
         ['layers', 'Cases', 'Solve real insurance problems', 'Reserve a fast-growing insurer, file an auto rate, price an accident surcharge. Then see what happened.', '#/cases', 'Browse cases'],
         ['grid', 'Skills', 'Excel and SQL, hands-on', 'Interactive tutorials on insurance data: lookups, loss triangles and time value in a built-in spreadsheet, and SQL on a practice claims database.', '#/skills', 'Build skills'],
